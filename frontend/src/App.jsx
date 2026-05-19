@@ -1,14 +1,18 @@
-import Navbar from "./components/Navbar"
+import { Routes, Route } from "react-router-dom"
+
+import Home from "./pages/Home"
+import Login from "./pages/Login"
+import Products from "./pages/Products"
+import Cart from "./pages/Cart"
 
 function App() {
   return (
-    <div>
-      <Navbar />
-
-      <h1>Entertainment Guild Web App</h1>
-
-      <p>Developed by Xinpeng Xu and Yuchi Qian</p>
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/products" element={<Products />} />
+      <Route path="/cart" element={<Cart />} />
+    </Routes>
   )
 }
 
