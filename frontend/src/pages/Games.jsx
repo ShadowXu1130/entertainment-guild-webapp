@@ -1,32 +1,62 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 
 function Games() {
-
   const [games, setGames] = useState([])
+  const [search, setSearch] = useState("")
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/inft3050/Product")
+    fetch("http://localhost:3001/api/inft3050/Genre")
       .then((response) => response.json())
       .then((data) => {
-        setGames(data.list.slice(12, 24))
+        const gamesGenre = data.list.find(
+          (genre) => genre.GenreID === 3
+        )
+
+        setGames(gamesGenre["Product List"])
       })
-      .catch((error) => {
-        console.log(error)
-      })
+      .catch((error) => console.log(error))
   }, [])
+
+  const filteredGames = games.filter((game) =>
+    game.Name.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
     <div>
-      <h1>Games</h1>
+
+      <div className="page-header">
+
+        <h1>Games</h1>
+
+        <input
+          type="text"
+          placeholder="Search games..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="product-search"
+        />
+
+      </div>
 
       <div className="product-grid">
-        {games.map((game) => (
+
+        {filteredGames.map((game) => (
+
           <div className="product-card" key={game.ID}>
+
             <h3>{game.Name}</h3>
-            <p>{game.Author}</p>
+
+            <Link to={`/products/${game.ID}`}>
+              View Details
+            </Link>
+
           </div>
+
         ))}
+
       </div>
+
     </div>
   )
 }
