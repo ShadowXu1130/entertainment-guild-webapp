@@ -43,15 +43,13 @@ function Games() {
 
         {filteredGames.map((game) => (
 
-          <div className="product-card" key={game.ID}>
-
+          <Link
+            to={`/products/${game.ID}`}
+            className="product-card product-card-link"
+            key={game.ID}
+            >
             <h3>{game.Name}</h3>
-
-            <Link to={`/products/${game.ID}`}>
-              View Details
-            </Link>
-
-          </div>
+          </Link>
 
         ))}
 

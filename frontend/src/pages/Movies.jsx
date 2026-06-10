@@ -13,9 +13,13 @@ function Movies() {
           (genre) => genre.GenreID === 2
         )
 
-        setMovies(moviesGenre["Product List"])
+        if (moviesGenre) {
+          setMovies(moviesGenre["Product List"])
+        }
       })
-      .catch((error) => console.log(error))
+      .catch((error) => {
+        console.log(error)
+      })
   }, [])
 
   const filteredMovies = movies.filter((movie) =>
@@ -23,40 +27,30 @@ function Movies() {
   )
 
   return (
-    <div>
-
+    <div className="products-page">
       <div className="page-header">
-
         <h1>Movies</h1>
 
         <input
-            type="text"
-            placeholder="Search movies..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="product-search"
+          type="text"
+          placeholder="Search movies..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="product-search"
         />
-
-    </div>
-
-      <div className="product-grid">
-
-        {filteredMovies.map((movie) => (
-
-          <div className="product-card" key={movie.ID}>
-
-            <h3>{movie.Name}</h3>
-
-            <Link to={`/products/${movie.ID}`}>
-              View Details
-            </Link>
-
-          </div>
-
-        ))}
-
       </div>
 
+      <div className="product-grid">
+        {filteredMovies.map((movie) => (
+          <Link
+            key={movie.ID}
+            to={`/products/${movie.ID}`}
+            className="product-card product-card-link"
+          >
+            <h3>{movie.Name}</h3>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
