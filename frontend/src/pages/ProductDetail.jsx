@@ -5,6 +5,8 @@ function ProductDetail() {
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [genreName, setGenreName] = useState("")
+  const [sourceNames, setSourceNames] = useState([])
+  const [sourceLink, setSourceLink] = useState("")
 
   useEffect(() => {
     fetch(`http://localhost:3001/api/inft3050/Product/${id}`)
@@ -21,6 +23,24 @@ function ProductDetail() {
 
             if (genre) {
               setGenreName(genre.Name)
+            }
+          })
+
+        fetch("http://localhost:3001/api/inft3050/Source")
+          .then((response) => response.json())
+          .then((sourceData) => {
+            const matchedSources = sourceData.list.filter((source) =>
+              source["Stocktake List"].some((item) => item.ItemId === data.ID)
+            )
+
+            setSourceNames(matchedSources.map((source) => source.SourceName))
+
+            const firstSourceWithLink = matchedSources.find(
+              (source) => source.ExternalLink
+            )
+
+            if (firstSourceWithLink) {
+              setSourceLink(firstSourceWithLink.ExternalLink)
             }
           })
       })
@@ -45,13 +65,26 @@ function ProductDetail() {
         <div className="product-detail-info">
           <h1>{product.Name}</h1>
 
-          <p>
-            <strong>Author:</strong> {product.Author || "N/A"}
-          </p>
+          <p><strong>ID:</strong> {product.ID}</p>
+          <p><strong>Author:</strong> {product.Author || "N/A"}</p>
+          <p><strong>Genre:</strong> {genreName || "N/A"}</p>
 
           <p>
-            <strong>Genre:</strong> {genreName || "N/A"}
+            <strong>Source:</strong>{" "}
+            {sourceNames.length > 0 ? sourceNames.join(", ") : "N/A"}
           </p>
+
+          {sourceLink && (
+            <p>
+              <a
+                href={sourceLink}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Visit Source
+              </a>
+            </p>
+          )}
 
           <p>
             <strong>Published:</strong>{" "}
