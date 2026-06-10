@@ -6,6 +6,8 @@ import Login from "./pages/Login"
 import Products from "./pages/Products"
 import Cart from "./pages/Cart"
 import ProductDetail from "./pages/ProductDetail"
+import Movies from "./pages/Movies"
+import Games from "./pages/Games"
 
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/movies" element={<Movies />} />
+        <Route path="/games" element={<Games />} />
       </Routes>
     </BrowserRouter>
   )
