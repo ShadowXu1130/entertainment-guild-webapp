@@ -1,44 +1,74 @@
-import { useParams } from "react-router-dom"
 import { useEffect, useState } from "react"
+import { useParams, Link } from "react-router-dom"
 
 function ProductDetail() {
-
   const { id } = useParams()
-
   const [product, setProduct] = useState(null)
+  const [genreName, setGenreName] = useState("")
 
   useEffect(() => {
-
     fetch(`http://localhost:3001/api/inft3050/Product/${id}`)
       .then((response) => response.json())
       .then((data) => {
         setProduct(data)
+
+        fetch("http://localhost:3001/api/inft3050/Genre")
+          .then((response) => response.json())
+          .then((genreData) => {
+            const genre = genreData.list.find((genre) =>
+              genre["Product List"].some((item) => item.ID === data.ID)
+            )
+
+            if (genre) {
+              setGenreName(genre.Name)
+            }
+          })
       })
       .catch((error) => {
         console.log(error)
       })
-
   }, [id])
 
   if (!product) {
-    return <h2>Loading...</h2>
+    return <p>Loading product details...</p>
   }
 
   return (
-    <div>
+    <div className="product-detail-page">
+      <Link to="/products">Back to Books</Link>
 
-      <h1>{product.Name}</h1>
+      <div className="product-detail-card">
+        <div className="product-image-placeholder">
+          Product Image
+        </div>
 
-      <h3>{product.Author}</h3>
+        <div className="product-detail-info">
+          <h1>{product.Name}</h1>
 
-      <p>{product.Description}</p>
+          <p>
+            <strong>Author:</strong> {product.Author || "N/A"}
+          </p>
 
-      <p>
-        Published:
-        {" "}
-        {product.Published}
-      </p>
+          <p>
+            <strong>Genre:</strong> {genreName || "N/A"}
+          </p>
 
+          <p>
+            <strong>Published:</strong>{" "}
+            {product.Published
+              ? new Date(product.Published).getFullYear()
+              : "N/A"}
+          </p>
+
+          <h3>Description</h3>
+
+          <p className="product-description">
+            {product.Description || "No description available."}
+          </p>
+
+          <button>Add to Cart</button>
+        </div>
+      </div>
     </div>
   )
 }
