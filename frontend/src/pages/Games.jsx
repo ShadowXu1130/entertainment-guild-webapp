@@ -2,32 +2,68 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
 function Games() {
-  const [games, setGames] = useState([])
+  const [groupedGames, setGroupedGames] = useState({})
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/inft3050/Genre")
-      .then((response) => response.json())
-      .then((data) => {
-        const gamesGenre = data.list.find(
+    Promise.all([
+      fetch("http://localhost:3001/api/inft3050/Product?limit=300").then((res) =>
+        res.json()
+      ),
+      fetch("http://localhost:3001/api/inft3050/Genre").then((res) =>
+        res.json()
+      ),
+      fetch("http://localhost:3001/api/inft3050/GameGenre").then((res) =>
+        res.json()
+      )
+    ])
+      .then(([productData, genreData, gameGenreData]) => {
+        const gamesGenre = genreData.list.find(
           (genre) => genre.GenreID === 3
         )
 
-        setGames(gamesGenre["Product List"])
+        if (!gamesGenre) {
+          setGroupedGames({})
+          return
+        }
+
+        const gameIds = gamesGenre["Product List"].map((game) => game.ID)
+
+        const games = productData.list.filter((product) =>
+          gameIds.includes(product.ID)
+        )
+
+        const grouped = {}
+
+        gameGenreData.list.forEach((subGenre) => {
+          const gamesInGenre = games.filter(
+            (game) => game.SubGenre === subGenre.SubGenreID
+          )
+
+          if (gamesInGenre.length > 0) {
+            grouped[subGenre.Name] = gamesInGenre
+          }
+        })
+
+        setGroupedGames(grouped)
       })
-      .catch((error) => console.log(error))
+      .catch((error) => {
+        console.log(error)
+      })
   }, [])
 
-  const filteredGames = games.filter((game) =>
-    game.Name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filterGames = (games) => {
+    return games.filter((game) =>
+      game.Name.toLowerCase().includes(search.toLowerCase())
+    )
+  }
 
   return (
-    <div>
-
-      <div className="page-header">
-
-        <h1>Games</h1>
+    <div className="apple-books-page">
+      <div className="apple-page-header">
+        <div>
+          <h1>Games</h1>
+        </div>
 
         <input
           type="text"
@@ -36,25 +72,34 @@ function Games() {
           onChange={(e) => setSearch(e.target.value)}
           className="product-search"
         />
-
       </div>
 
-      <div className="product-grid">
+      {Object.keys(groupedGames).map((subGenreName) => {
+        const games = filterGames(groupedGames[subGenreName])
 
-        {filteredGames.map((game) => (
+        if (games.length === 0) {
+          return null
+        }
 
-          <Link
-            to={`/products/${game.ID}`}
-            className="product-card product-card-link"
-            key={game.ID}
-            >
-            <h3>{game.Name}</h3>
-          </Link>
+        return (
+          <section className="book-row-section" key={subGenreName}>
+            <h2>{subGenreName}</h2>
 
-        ))}
-
-      </div>
-
+            <div className="book-horizontal-row">
+              {games.map((game) => (
+                <Link
+                  key={game.ID}
+                  to={`/products/${game.ID}`}
+                  className="apple-book-card"
+                >
+                  <h3>{game.Name}</h3>
+                  <p>{game.Author || "N/A"}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }

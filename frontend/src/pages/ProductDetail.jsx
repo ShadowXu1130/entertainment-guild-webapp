@@ -5,6 +5,7 @@ function ProductDetail() {
   const { id } = useParams()
   const [product, setProduct] = useState(null)
   const [genreName, setGenreName] = useState("")
+  const [subGenreName, setSubGenreName] = useState("")
   const [sourceNames, setSourceNames] = useState([])
   const [sourceLink, setSourceLink] = useState("")
 
@@ -23,6 +24,18 @@ function ProductDetail() {
 
             if (genre) {
               setGenreName(genre.Name)
+            }
+          })
+
+        fetch("http://localhost:3001/api/inft3050/BookGenre")
+          .then((response) => response.json())
+          .then((bookGenreData) => {
+            const subGenre = bookGenreData.list.find(
+              (item) => item.SubGenreID === data.SubGenre
+            )
+
+            if (subGenre) {
+              setSubGenreName(subGenre.Name)
             }
           })
 
@@ -68,6 +81,7 @@ function ProductDetail() {
           <p><strong>ID:</strong> {product.ID}</p>
           <p><strong>Author:</strong> {product.Author || "N/A"}</p>
           <p><strong>Genre:</strong> {genreName || "N/A"}</p>
+          <p><strong>Sub Genre:</strong> {subGenreName || "N/A"}</p>
 
           <p>
             <strong>Source:</strong>{" "}

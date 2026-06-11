@@ -2,34 +2,68 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
 function Movies() {
-  const [movies, setMovies] = useState([])
+  const [groupedMovies, setGroupedMovies] = useState({})
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/inft3050/Genre")
-      .then((response) => response.json())
-      .then((data) => {
-        const moviesGenre = data.list.find(
+    Promise.all([
+      fetch("http://localhost:3001/api/inft3050/Product?limit=300").then((res) =>
+        res.json()
+      ),
+      fetch("http://localhost:3001/api/inft3050/Genre").then((res) =>
+        res.json()
+      ),
+      fetch("http://localhost:3001/api/inft3050/MovieGenre").then((res) =>
+        res.json()
+      )
+    ])
+      .then(([productData, genreData, movieGenreData]) => {
+        const moviesGenre = genreData.list.find(
           (genre) => genre.GenreID === 2
         )
 
-        if (moviesGenre) {
-          setMovies(moviesGenre["Product List"])
+        if (!moviesGenre) {
+          setGroupedMovies({})
+          return
         }
+
+        const movieIds = moviesGenre["Product List"].map((movie) => movie.ID)
+
+        const movies = productData.list.filter((product) =>
+          movieIds.includes(product.ID)
+        )
+
+        const grouped = {}
+
+        movieGenreData.list.forEach((subGenre) => {
+          const moviesInGenre = movies.filter(
+            (movie) => movie.SubGenre === subGenre.SubGenreID
+          )
+
+          if (moviesInGenre.length > 0) {
+            grouped[subGenre.Name] = moviesInGenre
+          }
+        })
+
+        setGroupedMovies(grouped)
       })
       .catch((error) => {
         console.log(error)
       })
   }, [])
 
-  const filteredMovies = movies.filter((movie) =>
-    movie.Name.toLowerCase().includes(search.toLowerCase())
-  )
+  const filterMovies = (movies) => {
+    return movies.filter((movie) =>
+      movie.Name.toLowerCase().includes(search.toLowerCase())
+    )
+  }
 
   return (
-    <div className="products-page">
-      <div className="page-header">
-        <h1>Movies</h1>
+    <div className="apple-books-page">
+      <div className="apple-page-header">
+        <div>
+          <h1>Movies</h1>
+        </div>
 
         <input
           type="text"
@@ -40,17 +74,32 @@ function Movies() {
         />
       </div>
 
-      <div className="product-grid">
-        {filteredMovies.map((movie) => (
-          <Link
-            key={movie.ID}
-            to={`/products/${movie.ID}`}
-            className="product-card product-card-link"
-          >
-            <h3>{movie.Name}</h3>
-          </Link>
-        ))}
-      </div>
+      {Object.keys(groupedMovies).map((subGenreName) => {
+        const movies = filterMovies(groupedMovies[subGenreName])
+
+        if (movies.length === 0) {
+          return null
+        }
+
+        return (
+          <section className="book-row-section" key={subGenreName}>
+            <h2>{subGenreName}</h2>
+
+            <div className="book-horizontal-row">
+              {movies.map((movie) => (
+                <Link
+                  key={movie.ID}
+                  to={`/products/${movie.ID}`}
+                  className="apple-book-card"
+                >
+                  <h3>{movie.Name}</h3>
+                  <p>{movie.Author || "N/A"}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }

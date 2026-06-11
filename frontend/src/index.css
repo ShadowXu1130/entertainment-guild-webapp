@@ -51,11 +51,7 @@
 }
 
 body {
-  margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(99, 102, 241, 0.25), transparent 35%),
-    radial-gradient(circle at top right, rgba(168, 85, 247, 0.22), transparent 35%),
-    linear-gradient(180deg, #f7f8fb 0%, #eef1f6 100%);
+  background: #f5f5f7;
 }
 
 #root {
@@ -583,4 +579,424 @@ code {
 
 .home-product-card-link:hover {
   transform: translateY(-6px);
+}
+
+.apple-books-page {
+  max-width: 1180px;
+  margin: 60px auto 100px;
+}
+
+.apple-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.apple-page-header h1 {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -2px;
+}
+
+.apple-page-header p {
+  margin-top: 8px;
+  color: #6b7280;
+}
+
+.book-row-section {
+  margin-bottom: 54px;
+}
+
+.book-row-section h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.book-horizontal-row {
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+  padding: 8px 4px 28px;
+  scroll-snap-type: x mandatory;
+}
+
+.book-horizontal-row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.book-horizontal-row::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 140, 0.35);
+  border-radius: 999px;
+}
+
+.apple-book-card {
+  flex: 0 0 320px;
+  height: 230px;
+
+  padding: 28px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  text-decoration: none;
+  color: inherit;
+
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+
+  border-radius: 28px;
+
+  box-shadow:
+    0 18px 45px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+
+  scroll-snap-align: start;
+  transition: all 0.25s ease;
+}
+
+.apple-book-card:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 26px 60px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.apple-book-card h3 {
+  margin: 0 0 14px;
+  font-size: 22px;
+  line-height: 1.25;
+  color: #3f3a4d;
+}
+
+.apple-book-card p {
+  color: #6b7280;
+}
+
+.book-horizontal-row {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.book-horizontal-row::-webkit-scrollbar {
+  display: none;
+}
+
+.book-horizontal-row {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+
+  padding: 8px 4px 28px;
+  scroll-snap-type: x mandatory;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.book-horizontal-row::-webkit-scrollbar {
+  display: none;
+}
+
+.book-row-section {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.apple-books-page {
+  background: transparent !important;
+}
+
+.product-card,
+.home-product-card,
+.book-card {
+  background: #ffffff;
+
+  border-radius: 24px;
+
+  box-shadow:
+    0 4px 12px rgba(0,0,0,.04);
+
+  backdrop-filter: none;
+}
+
+.book-horizontal-row {
+  background: transparent;
+}
+
+.book-row-section h2 {
+  color: #1d1d1f;
+  font-weight: 700;
+}
+
+.book-row-section h2 {
+  color: #1d1d1f;
+  font-weight: 700;
+}
+
+.product-search {
+  background: #ffffff;
+  border: none;
+
+  box-shadow:
+    0 2px 10px rgba(0,0,0,.05);
+}
+
+.book-horizontal-row {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.book-row-section {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+
+  box-shadow: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.apple-books-page {
+  background: transparent !important;
+}
+
+.apple-book-card {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04) !important;
+}
+
+.apple-book-card {
+  min-width: 340px;
+
+  height: 360px;
+
+  border-radius: 28px;
+
+  background: #ffffff;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  padding: 30px;
+
+  box-sizing: border-box;
+
+  transition: all .3s ease;
+}
+
+.apple-book-card h3 {
+  font-size: 30px;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.apple-book-card p {
+  font-size: 18px;
+}
+
+.book-cover-placeholder {
+  flex: 1;
+
+  margin-top: 20px;
+
+  border-radius: 18px;
+
+  background: #f5f5f7;
+}
+
+.apple-book-card {
+  min-width: 360px;
+  height: 420px;
+}
+
+.apple-books-page {
+  width: 100%;
+  max-width: none;
+
+  padding-left: 80px;
+  padding-right: 0;
+}
+
+.book-horizontal-row {
+  width: 100vw;
+
+  margin-left: calc(-50vw + 50%);
+
+  padding-left: 80px;
+
+  overflow-x: auto;
+
+  scrollbar-width: none;
+}
+
+.book-horizontal-row::-webkit-scrollbar {
+  display: none;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+#root {
+  overflow-x: hidden;
+}
+
+.apple-books-page {
+  width: 100%;
+  max-width: 1180px;
+  margin: 60px auto 100px;
+  overflow: visible;
+}
+
+.book-horizontal-row {
+  width: 100%;
+  margin-left: 0 !important;
+
+  display: flex;
+  gap: 24px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 8px 0 32px;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.book-horizontal-row::-webkit-scrollbar {
+  display: none;
+}
+
+.apple-book-card {
+  flex: 0 0 340px;
+  height: 420px;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+#root {
+  overflow-x: hidden;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  overflow-x: hidden;
+  background: #f5f5f7;
+}
+
+#root {
+  width: 100%;
+  max-width: none;
+  overflow-x: hidden;
+  background: #f5f5f7;
+}
+
+.apple-books-page {
+  width: 100%;
+  max-width: none;
+  margin: 60px 0 100px;
+  padding-left: 160px;
+  box-sizing: border-box;
+}
+
+.apple-page-header {
+  width: calc(100% - 160px);
+  max-width: 1180px;
+}
+
+.book-row-section {
+  width: 100%;
+  overflow: visible;
+  margin-bottom: 70px;
+}
+
+.book-horizontal-row {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  gap: 24px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 8px 0 34px;
+
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.book-horizontal-row::-webkit-scrollbar {
+  display: none;
+}
+
+.apple-book-card {
+  flex: 0 0 400px;
+  height: 500px;
+}
+
+.apple-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.product-search {
+  width: 280px;
+}
+
+.apple-page-header {
+  width: 100%;
+  max-width: none !important;
+
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+
+  margin: 0 0 55px !important;
+  padding-right: 160px;
+  box-sizing: border-box;
+}
+
+.apple-page-header h1 {
+  margin: 0 !important;
+}
+
+.apple-page-header .product-search {
+  margin: 0 !important;
+  width: 320px !important;
+  flex-shrink: 0;
+}
+
+.apple-page-header {
+  padding-right: 100px;
 }
