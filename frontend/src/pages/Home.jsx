@@ -33,7 +33,7 @@ function Home() {
 
   const renderRow = (title, items) => {
     return (
-      <section className="book-row-section">
+      <section className="book-row-section" key={title}>
         <h2>{title}</h2>
 
         <div className="book-horizontal-row">
@@ -43,6 +43,12 @@ function Home() {
               to={`/products/${item.ID}`}
               className="apple-book-card"
             >
+              <img
+                src={`/Pictures/${item.ID}.jpeg`}
+                alt={item.Name}
+                className="product-cover"
+              />
+
               <h3>{item.Name}</h3>
             </Link>
           ))}

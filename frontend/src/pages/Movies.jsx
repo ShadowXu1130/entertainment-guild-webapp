@@ -92,8 +92,13 @@ function Movies() {
                   to={`/products/${movie.ID}`}
                   className="apple-book-card"
                 >
+                  <img
+                    src={`/Pictures/${movie.ID}.jpeg`}
+                    alt={movie.Name}
+                    className="product-cover"
+                  />
+
                   <h3>{movie.Name}</h3>
-                  <p>{movie.Author || "N/A"}</p>
                 </Link>
               ))}
             </div>

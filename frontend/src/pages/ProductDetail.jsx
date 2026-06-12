@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useParams } from "react-router-dom"
 
 function ProductDetail() {
   const { id } = useParams()
@@ -24,18 +24,30 @@ function ProductDetail() {
 
             if (genre) {
               setGenreName(genre.Name)
-            }
-          })
 
-        fetch("http://localhost:3001/api/inft3050/BookGenre")
-          .then((response) => response.json())
-          .then((bookGenreData) => {
-            const subGenre = bookGenreData.list.find(
-              (item) => item.SubGenreID === data.SubGenre
-            )
+              let subGenreApi = ""
 
-            if (subGenre) {
-              setSubGenreName(subGenre.Name)
+              if (genre.GenreID === 1) {
+                subGenreApi = "BookGenre"
+              } else if (genre.GenreID === 2) {
+                subGenreApi = "MovieGenre"
+              } else if (genre.GenreID === 3) {
+                subGenreApi = "GameGenre"
+              }
+
+              if (subGenreApi) {
+                fetch(`http://localhost:3001/api/inft3050/${subGenreApi}`)
+                  .then((response) => response.json())
+                  .then((subGenreData) => {
+                    const subGenre = subGenreData.list.find(
+                      (item) => item.SubGenreID === data.SubGenre
+                    )
+
+                    if (subGenre) {
+                      setSubGenreName(subGenre.Name)
+                    }
+                  })
+              }
             }
           })
 
@@ -68,11 +80,13 @@ function ProductDetail() {
 
   return (
     <div className="product-detail-page">
-      <Link to="/products">Back to Books</Link>
-
       <div className="product-detail-card">
         <div className="product-image-placeholder">
-          Product Image
+          <img
+            src={`/Pictures/${product.ID}.jpeg`}
+            alt={product.Name}
+            className="detail-cover"
+          />
         </div>
 
         <div className="product-detail-info">

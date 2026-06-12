@@ -7,14 +7,25 @@ function Products() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:3001/api/inft3050/Product").then((res) => res.json()),
-      fetch("http://localhost:3001/api/inft3050/Genre").then((res) => res.json()),
-      fetch("http://localhost:3001/api/inft3050/BookGenre").then((res) => res.json())
+      fetch("http://localhost:3001/api/inft3050/Product?limit=300").then((res) =>
+        res.json()
+      ),
+      fetch("http://localhost:3001/api/inft3050/Genre").then((res) =>
+        res.json()
+      ),
+      fetch("http://localhost:3001/api/inft3050/BookGenre").then((res) =>
+        res.json()
+      )
     ])
       .then(([productData, genreData, bookGenreData]) => {
         const booksGenre = genreData.list.find(
           (genre) => genre.GenreID === 1
         )
+
+        if (!booksGenre) {
+          setGroupedBooks({})
+          return
+        }
 
         const bookIds = booksGenre["Product List"].map((book) => book.ID)
 
@@ -81,8 +92,13 @@ function Products() {
                   to={`/products/${book.ID}`}
                   className="apple-book-card"
                 >
+                  <img
+                    src={`/Pictures/${book.ID}.jpeg`}
+                    alt={book.Name}
+                    className="product-cover"
+                  />
+
                   <h3>{book.Name}</h3>
-                  <p>{book.Author || "N/A"}</p>
                 </Link>
               ))}
             </div>

@@ -86,16 +86,22 @@ function Games() {
             <h2>{subGenreName}</h2>
 
             <div className="book-horizontal-row">
-              {games.map((game) => (
-                <Link
-                  key={game.ID}
-                  to={`/products/${game.ID}`}
-                  className="apple-book-card"
-                >
-                  <h3>{game.Name}</h3>
-                  <p>{game.Author || "N/A"}</p>
-                </Link>
-              ))}
+                {games.map((game) => (
+                    <Link
+                        key={game.ID}
+                        to={`/products/${game.ID}`}
+                        className="apple-book-card"
+                    >
+                        <img
+                        src={`/Pictures/${game.ID}.jpeg`}
+                        alt={game.Name}
+                        className="product-cover"
+                        />
+
+                        <h3>{game.Name}</h3>
+
+                    </Link>
+                ))}
             </div>
           </section>
         )

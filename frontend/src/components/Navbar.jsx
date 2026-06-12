@@ -4,7 +4,7 @@ function Navbar() {
   return (
     <div>
       <div className="top-bar">
-        <Link to="/cart">Cart</Link>
+        <Link to="/cart">Shopping Cart</Link>
 
         <h2>Entertainment Guild</h2>
 
