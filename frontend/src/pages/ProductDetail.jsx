@@ -8,6 +8,8 @@ function ProductDetail() {
   const [subGenreName, setSubGenreName] = useState("")
   const [sourceNames, setSourceNames] = useState([])
   const [sourceLink, setSourceLink] = useState("")
+  const [price, setPrice] = useState(0)
+  const [quantityAvailable, setQuantityAvailable] = useState(0)
 
   useEffect(() => {
     fetch(`http://localhost:3001/api/inft3050/Product/${id}`)
@@ -55,7 +57,9 @@ function ProductDetail() {
           .then((response) => response.json())
           .then((sourceData) => {
             const matchedSources = sourceData.list.filter((source) =>
-              source["Stocktake List"].some((item) => item.ItemId === data.ID)
+              source["Stocktake List"].some(
+                (item) => item.ItemId === data.ID || item.ItemId === data["Stocktake List"]?.[0]?.ItemId
+              )
             )
 
             setSourceNames(matchedSources.map((source) => source.SourceName))
@@ -66,6 +70,19 @@ function ProductDetail() {
 
             if (firstSourceWithLink) {
               setSourceLink(firstSourceWithLink.ExternalLink)
+            }
+          })
+
+        fetch("http://localhost:3001/api/inft3050/Stocktake?limit=500")
+          .then((response) => response.json())
+          .then((stocktakeData) => {
+            const matchedStock = stocktakeData.list.find(
+              (stock) => stock.ProductId === data.ID
+            )
+
+            if (matchedStock) {
+              setPrice(matchedStock.Price)
+              setQuantityAvailable(matchedStock.Quantity)
             }
           })
       })
@@ -87,6 +104,8 @@ function ProductDetail() {
         genreName,
         subGenreName,
         sourceNames,
+        price,
+        quantityAvailable,
         quantity: 1
       })
     }
@@ -118,6 +137,8 @@ function ProductDetail() {
           <p><strong>Author:</strong> {product.Author || "N/A"}</p>
           <p><strong>Genre:</strong> {genreName || "N/A"}</p>
           <p><strong>Sub Genre:</strong> {subGenreName || "N/A"}</p>
+          <p><strong>Price:</strong> S${price ? price.toFixed(2) : "N/A"}</p>
+          <p><strong>Available Quantity:</strong> {quantityAvailable || "N/A"}</p>
 
           <p>
             <strong>Source:</strong>{" "}

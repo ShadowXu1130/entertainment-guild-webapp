@@ -40,12 +40,19 @@ function Cart() {
     })
   }
 
+  const getItemPrice = (item) => {
+    return Number(item.price) || 0
+  }
+
   const totalItems = cartItems.reduce(
     (sum, item) => sum + item.quantity,
     0
   )
 
-  const totalPrice = totalItems * 19.99
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + getItemPrice(item) * item.quantity,
+    0
+  )
 
   return (
     <div className="apple-cart-page">
@@ -92,6 +99,8 @@ function Cart() {
                     <p><strong>Author:</strong> {item.Author || "N/A"}</p>
                     <p><strong>Genre:</strong> {item.genreName || "N/A"}</p>
                     <p><strong>Sub Genre:</strong> {item.subGenreName || "N/A"}</p>
+                    <p><strong>Unit Price:</strong> S${getItemPrice(item).toFixed(2)}</p>
+                    <p><strong>Available Quantity:</strong> {item.quantityAvailable || "N/A"}</p>
 
                     <p className="cart-detail-description">
                       {item.Description || "No description available."}
@@ -107,7 +116,9 @@ function Cart() {
               </div>
 
               <div className="apple-cart-price">
-                <strong>S${(item.quantity * 19.99).toFixed(2)}</strong>
+                <strong>
+                  S${(getItemPrice(item) * item.quantity).toFixed(2)}
+                </strong>
 
                 <button onClick={() => removeItem(item.ID)}>
                   Remove
@@ -117,6 +128,11 @@ function Cart() {
           ))}
 
           <div className="apple-summary">
+            <div>
+              <span>Items</span>
+              <span>{totalItems}</span>
+            </div>
+
             <div>
               <span>Subtotal</span>
               <span>S${totalPrice.toFixed(2)}</span>
