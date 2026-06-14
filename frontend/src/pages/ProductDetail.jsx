@@ -74,6 +74,28 @@ function ProductDetail() {
       })
   }, [id])
 
+  const addToCart = () => {
+    const cart = JSON.parse(localStorage.getItem("cart")) || []
+
+    const existingItem = cart.find((item) => item.ID === product.ID)
+
+    if (existingItem) {
+      existingItem.quantity += 1
+    } else {
+      cart.push({
+        ...product,
+        genreName,
+        subGenreName,
+        sourceNames,
+        quantity: 1
+      })
+    }
+
+    localStorage.setItem("cart", JSON.stringify(cart))
+
+    alert(`${product.Name} added to cart`)
+  }
+
   if (!product) {
     return <p>Loading product details...</p>
   }
@@ -104,11 +126,7 @@ function ProductDetail() {
 
           {sourceLink && (
             <p>
-              <a
-                href={sourceLink}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={sourceLink} target="_blank" rel="noreferrer">
                 Visit Source
               </a>
             </p>
@@ -127,7 +145,9 @@ function ProductDetail() {
             {product.Description || "No description available."}
           </p>
 
-          <button>Add to Cart</button>
+          <button onClick={addToCart}>
+            Add to Cart
+          </button>
         </div>
       </div>
     </div>
