@@ -1408,3 +1408,26 @@ body {
 .details-link:hover {
   text-decoration: underline;
 }
+
+.payment-message {
+  margin: 20px auto 40px;
+  padding: 16px 24px;
+  max-width: 520px;
+  border-radius: 16px;
+  font-weight: 700;
+}
+
+.payment-message.approved {
+  background: #e8f7ee;
+  color: #137333;
+}
+
+.payment-message.declined {
+  background: #fdecec;
+  color: #b3261e;
+}
+
+.payment-message.timed-out {
+  background: #fff4db;
+  color: #8a5a00;
+}

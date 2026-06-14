@@ -4,6 +4,7 @@ import { Link } from "react-router-dom"
 function Cart() {
   const [cartItems, setCartItems] = useState([])
   const [openDetails, setOpenDetails] = useState({})
+  const [paymentStatus, setPaymentStatus] = useState("")
 
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem("cart")) || []
@@ -40,8 +41,26 @@ function Cart() {
     })
   }
 
+  const handleCheckout = () => {
+    if (cartItems.length === 0) {
+      setPaymentStatus("empty")
+      return
+    }
+
+    const results = ["approved", "declined", "timed-out"]
+    const randomResult = results[Math.floor(Math.random() * results.length)]
+
+    setPaymentStatus(randomResult)
+
+    if (randomResult === "approved") {
+      localStorage.removeItem("cart")
+      setCartItems([])
+      setOpenDetails({})
+    }
+  }
+
   const getItemPrice = (item) => {
-    return Number(item.price) || 0
+    return Number(item.price || item.Price || 0)
   }
 
   const totalItems = cartItems.reduce(
@@ -60,9 +79,23 @@ function Cart() {
       <p className="cart-subtitle">Get free delivery on all products.</p>
 
       <div className="cart-top-buttons">
-        <button className="apple-pay-btn">Check Out with Apple Pay</button>
-        <button className="blue-checkout-btn">Check Out</button>
+        <button className="apple-pay-btn" onClick={handleCheckout}>
+          Check Out with Apple Pay
+        </button>
+
+        <button className="blue-checkout-btn" onClick={handleCheckout}>
+          Check Out
+        </button>
       </div>
+
+      {paymentStatus && (
+        <div className={`payment-message ${paymentStatus}`}>
+          {paymentStatus === "approved" && "Payment approved. Order completed."}
+          {paymentStatus === "declined" && "Payment declined. Please try again."}
+          {paymentStatus === "timed-out" && "Payment timed out. Please retry checkout."}
+          {paymentStatus === "empty" && "Your cart is empty. Please add products before checkout."}
+        </div>
+      )}
 
       {cartItems.length === 0 ? (
         <div className="empty-cart">
@@ -153,8 +186,13 @@ function Cart() {
             <p>Includes GST where applicable.</p>
 
             <div className="cart-bottom-buttons">
-              <button className="apple-pay-btn">Check Out with Apple Pay</button>
-              <button className="blue-checkout-btn">Check Out</button>
+              <button className="apple-pay-btn" onClick={handleCheckout}>
+                Check Out with Apple Pay
+              </button>
+
+              <button className="blue-checkout-btn" onClick={handleCheckout}>
+                Check Out
+              </button>
             </div>
           </div>
         </div>
