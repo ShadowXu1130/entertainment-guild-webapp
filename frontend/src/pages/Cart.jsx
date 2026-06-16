@@ -75,7 +75,7 @@ function Cart() {
 
   return (
     <div className="apple-cart-page">
-      <h1>Your bag total is S${totalPrice.toFixed(2)}.</h1>
+      <h1>Your bag total is S${totalPrice.toFixed(2)}</h1>
       <p className="cart-subtitle">Get free delivery on all products.</p>
 
       <div className="cart-top-buttons">

@@ -529,7 +529,12 @@ code {
   margin: 0 0 22px;
 }
 
+.product-detail-info h3 {
+  color:#000;
+}
+
 .product-detail-info p {
+  color:#000;
   margin: 6px 0;
 }
 
@@ -602,7 +607,7 @@ code {
 
 .apple-page-header p {
   margin-top: 8px;
-  color: #6b7280;
+  color: #000000;
 }
 
 .book-row-section {
@@ -992,6 +997,7 @@ body {
 }
 
 .apple-page-header .product-search {
+  color:#000;
   margin: 0 !important;
   width: 320px !important;
   flex-shrink: 0;
@@ -1246,6 +1252,7 @@ body {
 }
 
 .apple-cart-page h1 {
+  color:#000;
   font-size: 44px;
   font-weight: 700;
   margin-bottom: 12px;
@@ -1305,6 +1312,7 @@ body {
 }
 
 .apple-cart-main h2 {
+  color:#000;
   font-size: 28px;
   line-height: 1.15;
   margin: 0 0 18px;
@@ -1335,6 +1343,7 @@ body {
 }
 
 .apple-cart-price {
+  color:#000;
   text-align: right;
 }
 
@@ -1360,12 +1369,14 @@ body {
 }
 
 .apple-summary div {
+  color:#000;
   display: flex;
   justify-content: space-between;
   margin: 14px 0;
 }
 
 .apple-total {
+  color:#000;
   font-size: 28px;
 }
 
@@ -1387,7 +1398,8 @@ body {
 }
 
 .cart-product-details p {
-  margin: 6px 0;
+  color:#000;
+  margin: 5px 0;
   line-height: 1.5;
 }
 
@@ -1430,4 +1442,20 @@ body {
 .payment-message.timed-out {
   background: #fff4db;
   color: #8a5a00;
+}
+
+.payment-message.empty {
+  color: #000000;
+}
+
+.apple-page-header h1 {
+  color: #000000;
+}
+
+.product-detail-info h1 {
+  color: #000000;
+}
+
+.empty-cart h2 {
+  color:#000;
 }
