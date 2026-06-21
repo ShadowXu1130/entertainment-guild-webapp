@@ -1,6 +1,21 @@
 import { Link } from "react-router-dom"
+import { useEffect, useState } from "react"
 
 function Navbar() {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    localStorage.getItem("isLoggedIn") === "true"
+  )
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsLoggedIn(
+        localStorage.getItem("isLoggedIn") === "true"
+      )
+    }, 500)
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <div>
       <div className="top-bar">
@@ -8,7 +23,11 @@ function Navbar() {
 
         <h2>Entertainment Guild</h2>
 
-        <Link to="/login">Login / Settings</Link>
+        {isLoggedIn ? (
+          <Link to="/profile">Profile</Link>
+        ) : (
+          <Link to="/login">Login</Link>
+        )}
       </div>
 
       <div className="menu-bar">

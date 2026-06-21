@@ -8,6 +8,7 @@ import Cart from "./pages/Cart"
 import ProductDetail from "./pages/ProductDetail"
 import Movies from "./pages/Movies"
 import Games from "./pages/Games"
+import Profile from "./pages/Profile"
 
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/games" element={<Games />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </BrowserRouter>
   )
