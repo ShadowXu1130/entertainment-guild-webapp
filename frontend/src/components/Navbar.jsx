@@ -6,15 +6,35 @@ function Navbar() {
     localStorage.getItem("isLoggedIn") === "true"
   )
 
+  const [isAdmin, setIsAdmin] = useState(
+    localStorage.getItem("isAdmin") === "true"
+  )
+
   useEffect(() => {
     const interval = setInterval(() => {
       setIsLoggedIn(
         localStorage.getItem("isLoggedIn") === "true"
       )
+
+      setIsAdmin(
+        localStorage.getItem("isAdmin") === "true"
+      )
     }, 500)
 
     return () => clearInterval(interval)
   }, [])
+
+  const getProfilePath = () => {
+    if (!isLoggedIn) {
+      return "/login"
+    }
+
+    if (isAdmin) {
+      return "/admin"
+    }
+
+    return "/profile"
+  }
 
   return (
     <div>
@@ -24,9 +44,13 @@ function Navbar() {
         <h2>Entertainment Guild</h2>
 
         {isLoggedIn ? (
-          <Link to="/profile">Profile</Link>
+          <Link to={getProfilePath()}>
+            Profile
+          </Link>
         ) : (
-          <Link to="/login">Login</Link>
+          <Link to="/login">
+            Login
+          </Link>
         )}
       </div>
 
