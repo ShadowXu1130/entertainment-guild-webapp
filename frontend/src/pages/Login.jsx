@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 
 function Login() {
+  const navigate = useNavigate();
+
   const [userType, setUserType] = useState("customer");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -50,8 +52,7 @@ function Login() {
 
       setMessage(`Welcome ${user.username}`);
 
-      // Redirect after successful login
-      window.location.href = "/"
+      navigate("/");
     } catch (error) {
       console.error(error);
       setMessage("Connection failed. Check browser console.");
@@ -124,6 +125,14 @@ function Login() {
           className="login-submit"
         >
           Sign In
+        </button>
+
+        <button
+          type="button"
+          className="login-register-btn"
+          onClick={() => navigate("/register")}
+        >
+          Create Account
         </button>
 
         {message && (
