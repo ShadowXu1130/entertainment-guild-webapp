@@ -37,9 +37,7 @@ function Login() {
 
       if (user.isAdmin !== selectedIsAdmin) {
         setMessage(
-          `This account is ${
-            user.isAdmin ? "Admin" : "Customer"
-          }, not ${userType}`
+          `This account is ${user.isAdmin ? "Admin" : "Customer"}, not ${userType}`
         );
         return;
       }
@@ -52,7 +50,11 @@ function Login() {
 
       setMessage(`Welcome ${user.username}`);
 
-      navigate("/");
+      if (user.isAdmin) {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       console.error(error);
       setMessage("Connection failed. Check browser console.");
@@ -72,9 +74,7 @@ function Login() {
       </p>
 
       <form className="login-card" onSubmit={handleLogin}>
-        <label className="login-section-label">
-          ACCOUNT TYPE
-        </label>
+        <label className="login-section-label">ACCOUNT TYPE</label>
 
         <div className="login-switch">
           <button
@@ -94,9 +94,7 @@ function Login() {
           </button>
         </div>
 
-        <label className="login-input-label">
-          Username
-        </label>
+        <label className="login-input-label">Username</label>
 
         <input
           className="login-input"
@@ -107,9 +105,7 @@ function Login() {
           required
         />
 
-        <label className="login-input-label">
-          Password
-        </label>
+        <label className="login-input-label">Password</label>
 
         <input
           className="login-input"
@@ -120,10 +116,7 @@ function Login() {
           required
         />
 
-        <button
-          type="submit"
-          className="login-submit"
-        >
+        <button type="submit" className="login-submit">
           Sign In
         </button>
 
@@ -135,11 +128,7 @@ function Login() {
           Create Account
         </button>
 
-        {message && (
-          <p className="login-message">
-            {message}
-          </p>
-        )}
+        {message && <p className="login-message">{message}</p>}
       </form>
     </div>
   );

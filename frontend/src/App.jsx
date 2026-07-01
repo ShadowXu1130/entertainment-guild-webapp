@@ -10,6 +10,7 @@ import Movies from "./pages/Movies"
 import Games from "./pages/Games"
 import Profile from "./pages/Profile"
 import Register from "./pages/Register"
+import Admin from "./pages/Admin"
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
         <Route path="/games" element={<Games />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   )
