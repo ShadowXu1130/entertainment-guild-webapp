@@ -16,15 +16,22 @@ const [showUserModal, setShowUserModal] = useState(false)
 const [editingUser, setEditingUser] = useState(null)
 const [showStockModal, setShowStockModal] = useState(false)
 const [editingStock, setEditingStock] = useState(null)
+const [genres, setGenres] = useState([])
+const [gameGenres, setGameGenres] = useState([])
+const [movieGenres, setMovieGenres] = useState([])
+const [bookGenres, setBookGenres] = useState([])
+const [productPage, setProductPage] = useState(1)
+const productsPerPage = 25
 
 
   const [newProduct, setNewProduct] = useState({
-    Name: "",
-    Author: "",
-    Description: "",
-    SubGenre: 1,
-    Published: ""
-  })
+  Name: "",
+  Author: "",
+  Description: "",
+  Genre: "",
+  SubGenre: "",
+  Published: ""
+})
 
   const safeText = (value) => {
     if (value === null || value === undefined || value === "") return "N/A"
@@ -73,6 +80,22 @@ const [editingStock, setEditingStock] = useState(null)
       .then((res) => res.json())
       .then((data) => setOrders(data.list || []))
       .catch((err) => console.log(err))
+
+    fetch("/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000")
+        .then((res) => res.json())
+        .then((data) => setGenres(data.list || []))
+        .catch((err) => console.log(err))
+    fetch("/api/inft3050/GameGenre")
+    .then((res) => res.json())
+    .then((data) => setGameGenres(data.list || []))
+
+    fetch("/api/inft3050/MovieGenre")
+    .then((res) => res.json())
+    .then((data) => setMovieGenres(data.list || []))
+
+    fetch("/api/inft3050/BookGenre")
+    .then((res) => res.json())
+    .then((data) => setBookGenres(data.list || []))
   }
 
   const handleLogout = () => {
@@ -125,6 +148,17 @@ const [editingStock, setEditingStock] = useState(null)
     ])
   )
 
+  const sortedProducts = filteredProducts
+  .slice()
+  .sort((a, b) => Number(a.ID) - Number(b.ID))
+
+const totalProductPages = Math.ceil(sortedProducts.length / productsPerPage)
+
+const paginatedProducts = sortedProducts.slice(
+  (productPage - 1) * productsPerPage,
+  productPage * productsPerPage
+)
+
   const filteredUsers = users.filter((user) =>
     matchesSearch([user.UserID, user.UserName, user.Name, user.Email])
   )
@@ -152,10 +186,6 @@ const [editingStock, setEditingStock] = useState(null)
     ])
   )
 
-  const changeTab = (tab) => {
-    setActiveTab(tab)
-    setSearch("")
-  }
 
 const handleAddProduct = async (e) => {
   e.preventDefault()
@@ -170,11 +200,12 @@ const handleAddProduct = async (e) => {
         Name: newProduct.Name,
         Author: newProduct.Author,
         Description: newProduct.Description,
+        Genre: getGenreIDByName(newProduct.Genre),
         SubGenre: Number(newProduct.SubGenre),
         Published: newProduct.Published,
         LastUpdatedBy: username,
         LastUpdated: new Date().toISOString().split("T")[0]
-      })
+        })
     })
 
     if (!response.ok) {
@@ -184,11 +215,12 @@ const handleAddProduct = async (e) => {
     }
 
     setNewProduct({
-      Name: "",
-      Author: "",
-      Description: "",
-      SubGenre: 1,
-      Published: ""
+    Name: "",
+    Author: "",
+    Description: "",
+    Genre: "",
+    SubGenre: "",
+    Published: ""
     })
 
     alert("Product created successfully")
@@ -201,12 +233,15 @@ const handleAddProduct = async (e) => {
 
 
 const handleEditProduct = (product) => {
+  const genreName = getProductGenreName(product.ID, product.Genre)
+
   setEditingProduct({
     ID: product.ID,
     Name: product.Name || "",
     Author: product.Author || "",
     Description: product.Description || "",
-    SubGenre: product.SubGenre || 1,
+    Genre: genreName,
+    SubGenre: product.SubGenre || "",
     Published: product.Published
       ? product.Published.split("T")[0]
       : ""
@@ -226,11 +261,12 @@ const handleUpdateProduct = async () => {
         Name: editingProduct.Name,
         Author: editingProduct.Author,
         Description: editingProduct.Description,
+        Genre: getGenreIDByName(editingProduct.Genre),
         SubGenre: Number(editingProduct.SubGenre),
         Published: editingProduct.Published,
         LastUpdatedBy: username,
         LastUpdated: new Date().toISOString().split("T")[0]
-      })
+        })
     })
 
     if (!response.ok) {
@@ -366,6 +402,71 @@ const handleUpdateStock = async () => {
   }
 }
 
+const getGenreIDByName = (genreName) => {
+  const found = genres.find((genre) => genre.Name === genreName)
+  return found ? found.GenreID : null
+}
+
+const getProductGenreName = (productID, productGenreID = null) => {
+  if (productGenreID) {
+    const found = genres.find(
+      (genre) => Number(genre.GenreID) === Number(productGenreID)
+    )
+
+    if (found) return found.Name
+  }
+
+  for (const genre of genres) {
+    const productList = genre["Product List"] || []
+
+    const found = productList.find(
+      (product) => Number(product.ID) === Number(productID)
+    )
+
+    if (found) {
+      return genre.Name
+    }
+  }
+
+  return "N/A"
+}
+
+const getSubGenreName = (product) => {
+  const subGenreId = Number(product.SubGenre)
+
+  if (getProductGenreName(product.ID) === "Games") {
+    return (
+      gameGenres.find(
+        (genre) => Number(genre.SubGenreID) === subGenreId
+      )?.Name || subGenreId
+    )
+  }
+
+  if (getProductGenreName(product.ID) === "Movies") {
+    return (
+      movieGenres.find(
+        (genre) => Number(genre.SubGenreID) === subGenreId
+      )?.Name || subGenreId
+    )
+  }
+
+  if (getProductGenreName(product.ID) === "Books") {
+    return (
+      bookGenres.find(
+        (genre) => Number(genre.SubGenreID) === subGenreId
+      )?.Name || subGenreId
+    )
+  }
+
+  return subGenreId
+}
+
+const changeTab = (tab) => {
+  setActiveTab(tab)
+  setSearch("")
+  setProductPage(1)
+}
+
   const username = localStorage.getItem("username") || "admin"
 
   return (
@@ -443,11 +544,14 @@ const handleUpdateStock = async () => {
             </div>
 
             <input
-              className="admin-search"
-              type="text"
-              placeholder="Search current section..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+            className="admin-search"
+            type="text"
+            placeholder="Search current section..."
+            value={search}
+            onChange={(e) => {
+                setSearch(e.target.value)
+                setProductPage(1)
+            }}
             />
           </div>
 
@@ -479,20 +583,22 @@ const handleUpdateStock = async () => {
                       <td>#{safeText(user.UserID)}</td>
 
                     <td>
-                    <button
+                    <div className="action-buttons">
+                        <button
                         className="admin-edit-btn"
                         onClick={() => handleEditUser(user)}
-                    >
+                        >
                         Edit
-                    </button>
+                        </button>
 
-                    <button
-                    className="admin-delete-btn"
-                    onClick={() => handleDeleteUser(user.UserID)}
-                    disabled={String(user.UserName) === String(username)}
-                    >
-                    Delete
-                    </button>
+                        <button
+                        className="admin-delete-btn"
+                        onClick={() => handleDeleteUser(user.UserID)}
+                        disabled={String(user.UserName) === String(username)}
+                        >
+                        Delete
+                        </button>
+                    </div>
                     </td>
                     </tr>
                   ))}
@@ -535,18 +641,56 @@ const handleUpdateStock = async () => {
                     required
                 />
 
-                <input
-                    type="number"
-                    placeholder="SubGenre ID"
-                    value={newProduct.SubGenre}
+                <select
+                    value={newProduct.Genre}
                     onChange={(e) =>
-                    setNewProduct({
+                        setNewProduct({
                         ...newProduct,
-                        SubGenre: e.target.value
-                    })
+                        Genre: e.target.value,
+                        SubGenre: ""
+                        })
                     }
                     required
-                />
+                    >
+                    <option value="">Select Genre</option>
+                    <option value="Books">Books</option>
+                    <option value="Movies">Movies</option>
+                    <option value="Games">Games</option>
+                    </select>
+
+                    <select
+                    value={newProduct.SubGenre}
+                    onChange={(e) =>
+                        setNewProduct({
+                        ...newProduct,
+                        SubGenre: e.target.value
+                        })
+                    }
+                    required
+                    >
+                    <option value="">Select Sub Genre</option>
+
+                    {newProduct.Genre === "Books" &&
+                        bookGenres.map((genre) => (
+                        <option key={genre.SubGenreID} value={genre.SubGenreID}>
+                            {genre.Name}
+                        </option>
+                        ))}
+
+                    {newProduct.Genre === "Movies" &&
+                        movieGenres.map((genre) => (
+                        <option key={genre.SubGenreID} value={genre.SubGenreID}>
+                            {genre.Name}
+                        </option>
+                        ))}
+
+                    {newProduct.Genre === "Games" &&
+                        gameGenres.map((genre) => (
+                        <option key={genre.SubGenreID} value={genre.SubGenreID}>
+                            {genre.Name}
+                        </option>
+                        ))}
+                    </select>
 
                 <input
                     type="date"
@@ -592,36 +736,60 @@ const handleUpdateStock = async () => {
                 </thead>
 
                 <tbody>
-                  {filteredProducts.slice().reverse().map((product) => (
+                  {paginatedProducts.map((product) => (
                     <tr key={product.ID}>
                       <td>{safeText(product.Name)}</td>
                       <td>{safeText(product.Author)}</td>
-                      <td>{safeText(product.Genre)}</td>
-                      <td>{safeText(product.SubGenre)}</td>
+                      <td>{getProductGenreName(product.ID, product.Genre)}</td>
+                      <td>{getSubGenreName(product)}</td>
                       <td>#{safeText(product.ID)}</td>
                       <td>
-                        <button
+                        <div className="action-buttons">
+                            <button
                             className="admin-edit-btn"
                             onClick={() => handleEditProduct(product)}
-                        >
+                            >
                             Edit
-                        </button>
+                            </button>
 
-                        <button
+                            <button
                             className="admin-delete-btn"
                             onClick={() => handleDeleteProduct(product.ID)}
-                        >
+                            >
                             Delete
-                        </button>
-                      </td>
+                            </button>
+                        </div>
+                        </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              {filteredProducts.length === 0 && (
+                <div className="pagination">
+                <button
+                    onClick={() => setProductPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={productPage === 1}
+                >
+                    Previous
+                </button>
+
+                <span>
+                    Page {productPage} of {totalProductPages}
+                </span>
+
+                <button
+                    onClick={() =>
+                    setProductPage((prev) => Math.min(prev + 1, totalProductPages))
+                    }
+                    disabled={productPage === totalProductPages}
+                >
+                    Next
+                </button>
+                </div>
+
+                {filteredProducts.length === 0 && (
                 <p className="profile-empty">No products found.</p>
-              )}
+                )}
             </div>
           )}
 
@@ -688,6 +856,8 @@ const handleUpdateStock = async () => {
                   ))}
                 </tbody>
               </table>
+
+              
             </div>
           )}
         </section>
@@ -696,72 +866,140 @@ const handleUpdateStock = async () => {
       {showEditModal && editingProduct && (
         <div className="modal-overlay">
             <div className="modal">
+
             <h3>Edit Product</h3>
 
-            <input
+            <div className="modal-form">
+
+                <input
                 value={editingProduct.Name}
                 onChange={(e) =>
-                setEditingProduct({
+                    setEditingProduct({
                     ...editingProduct,
                     Name: e.target.value
-                })
+                    })
                 }
-            />
+                placeholder="Product Name"
+                />
 
-            <input
+                <input
                 value={editingProduct.Author}
                 onChange={(e) =>
-                setEditingProduct({
+                    setEditingProduct({
                     ...editingProduct,
                     Author: e.target.value
-                })
+                    })
                 }
-            />
+                placeholder="Author"
+                />
 
-            <input
-                type="number"
-                value={editingProduct.SubGenre}
-                onChange={(e) =>
-                setEditingProduct({
-                    ...editingProduct,
-                    SubGenre: e.target.value
-                })
-                }
-            />
+                <div className="genre-row">
 
-            <input
+                <select
+                    value={editingProduct.Genre}
+                    onChange={(e) =>
+                    setEditingProduct({
+                        ...editingProduct,
+                        Genre: e.target.value,
+                        SubGenre: ""
+                    })
+                    }
+                >
+                    <option value="">Select Genre</option>
+                    <option value="Books">Books</option>
+                    <option value="Movies">Movies</option>
+                    <option value="Games">Games</option>
+                </select>
+
+                <select
+                    value={editingProduct.SubGenre}
+                    onChange={(e) =>
+                    setEditingProduct({
+                        ...editingProduct,
+                        SubGenre: e.target.value
+                    })
+                    }
+                >
+                    <option value="">Select Sub Genre</option>
+
+                    {editingProduct.Genre === "Books" &&
+                    bookGenres.map((genre) => (
+                        <option
+                        key={genre.SubGenreID}
+                        value={genre.SubGenreID}
+                        >
+                        {genre.Name}
+                        </option>
+                    ))}
+
+                    {editingProduct.Genre === "Movies" &&
+                    movieGenres.map((genre) => (
+                        <option
+                        key={genre.SubGenreID}
+                        value={genre.SubGenreID}
+                        >
+                        {genre.Name}
+                        </option>
+                    ))}
+
+                    {editingProduct.Genre === "Games" &&
+                    gameGenres.map((genre) => (
+                        <option
+                        key={genre.SubGenreID}
+                        value={genre.SubGenreID}
+                        >
+                        {genre.Name}
+                        </option>
+                    ))}
+                </select>
+
+                </div>
+
+                <input
                 type="date"
                 value={editingProduct.Published}
                 onChange={(e) =>
-                setEditingProduct({
+                    setEditingProduct({
                     ...editingProduct,
                     Published: e.target.value
-                })
+                    })
                 }
-            />
+                />
 
-            <textarea
+                <textarea
+                rows="5"
                 value={editingProduct.Description}
                 onChange={(e) =>
-                setEditingProduct({
+                    setEditingProduct({
                     ...editingProduct,
                     Description: e.target.value
-                })
+                    })
                 }
-            />
+                />
 
-            <button onClick={handleUpdateProduct}>
-                Save
-            </button>
+                <div className="modal-actions">
 
-            <button
-                onClick={() => {
-                setShowEditModal(false)
-                setEditingProduct(null)
-                }}
-            >
-                Cancel
-            </button>
+                <button
+                    className="modal-save-btn"
+                    onClick={handleUpdateProduct}
+                >
+                    Save Changes
+                </button>
+
+                <button
+                    className="modal-cancel-btn"
+                    onClick={() => {
+                    setShowEditModal(false)
+                    setEditingProduct(null)
+                    }}
+                >
+                    Cancel
+                </button>
+
+                </div>
+
+            </div>
+
             </div>
         </div>
         )}

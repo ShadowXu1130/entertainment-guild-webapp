@@ -105,13 +105,14 @@ app.post("/api-add-product", async (req, res) => {
       Name,
       Author,
       Description,
+      Genre,
       SubGenre,
       Published,
       LastUpdatedBy,
       LastUpdated
     } = req.body
 
-    if (!Name || !Author || !Description || !SubGenre || !Published) {
+    if (!Name || !Author || !Description || !Genre || !SubGenre || !Published) {
       return res.status(400).send("Missing required product fields")
     }
 
@@ -129,6 +130,7 @@ app.post("/api-add-product", async (req, res) => {
           Name,
           Author,
           Description,
+          Genre: Number(Genre),
           SubGenre: Number(SubGenre),
           Published,
           LastUpdatedBy: LastUpdatedBy || "adminAccount",
