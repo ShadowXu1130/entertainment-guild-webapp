@@ -266,6 +266,46 @@ app.patch("/api-edit-stocktake/:id", async (req, res) => {
   }
 })
 
+app.post("/api-add-stocktake", async (req, res) => {
+  try {
+    const { SourceId, ProductId, Quantity, Price } = req.body
+
+    if (!SourceId || !ProductId || Quantity === "" || Price === "") {
+      return res.status(400).send("Missing required stocktake fields")
+    }
+
+    const setCookie = await getAdminCookie()
+
+    const createResponse = await fetch(
+      "http://localhost:3001/api/inft3050/Stocktake",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: setCookie
+        },
+        body: JSON.stringify({
+          SourceId: Number(SourceId),
+          ProductId: Number(ProductId),
+          Quantity: Number(Quantity),
+          Price: Number(Price)
+        })
+      }
+    )
+
+    const resultText = await createResponse.text()
+
+    if (!createResponse.ok) {
+      return res.status(createResponse.status).send(resultText)
+    }
+
+    res.status(201).send(resultText)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Add stocktake failed")
+  }
+})
+
 const PORT = 5050
 
 app.listen(PORT, () => {

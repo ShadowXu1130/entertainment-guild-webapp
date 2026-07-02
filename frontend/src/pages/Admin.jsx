@@ -36,6 +36,13 @@ const stockPerPage = 25
   Published: ""
 })
 
+const [newStock, setNewStock] = useState({
+  SourceId: "",
+  ProductId: "",
+  Quantity: "",
+  Price: ""
+})
+
   const safeText = (value) => {
     if (value === null || value === undefined || value === "") return "N/A"
 
@@ -430,6 +437,38 @@ const handleUpdateStock = async () => {
     console.error(error)
     alert("Update failed")
   }
+}
+
+const handleAddStock = async (e) => {
+  e.preventDefault()
+
+  const response = await fetch("/api-add-stocktake", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      SourceId: Number(newStock.SourceId),
+      ProductId: Number(newStock.ProductId),
+      Quantity: Number(newStock.Quantity),
+      Price: Number(newStock.Price)
+    })
+  })
+
+  if (!response.ok) {
+    alert(await response.text())
+    return
+  }
+
+  setNewStock({
+    SourceId: "",
+    ProductId: "",
+    Quantity: "",
+    Price: ""
+  })
+
+  alert("Stocktake created successfully")
+  loadAdminData()
 }
 
 const getGenreIDByName = (genreName) => {
@@ -852,6 +891,66 @@ const changeTab = (tab) => {
           {activeTab === "stocktake" && (
             <div>
               <h2>Inventory / Stocktake</h2>
+
+              <form className="stocktake-form" onSubmit={handleAddStock}>
+                <select
+                    value={newStock.SourceId}
+                    onChange={(e) =>
+                    setNewStock({ ...newStock, SourceId: e.target.value })
+                    }
+                    required
+                >
+                    <option value="">Select Source</option>
+                    {sources.map((source) => (
+                    <option
+                        key={source.Sourceid || source.SourceID}
+                        value={source.Sourceid || source.SourceID}
+                    >
+                        {source.Source_name || source.SourceName || source.Name}
+                    </option>
+                    ))}
+                </select>
+
+                <select
+                    value={newStock.ProductId}
+                    onChange={(e) =>
+                    setNewStock({ ...newStock, ProductId: e.target.value })
+                    }
+                    required
+                >
+                    <option value="">Select Product</option>
+                    {products.map((product) => (
+                    <option key={product.ID} value={product.ID}>
+                        #{product.ID} - {product.Name}
+                    </option>
+                    ))}
+                </select>
+
+                <input
+                    type="number"
+                    placeholder="Quantity"
+                    value={newStock.Quantity}
+                    onChange={(e) =>
+                    setNewStock({ ...newStock, Quantity: e.target.value })
+                    }
+                    required
+                />
+
+                <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Price"
+                    value={newStock.Price}
+                    onChange={(e) =>
+                    setNewStock({ ...newStock, Price: e.target.value })
+                    }
+                    required
+                />
+
+                <button type="submit" className="stocktake-add-btn">
+                    Add Stocktake
+                </button>
+                </form>
 
               <table className="admin-table">
                 <thead>

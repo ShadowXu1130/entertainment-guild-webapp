@@ -2462,3 +2462,35 @@ body {
   border-radius: 14px;
   font-size: 16px;
 }
+
+.stocktake-form {
+  display: grid;
+  grid-template-columns: 1.2fr 1.8fr 0.8fr 0.8fr 0.9fr;
+  gap: 14px;
+  align-items: center;
+  margin: 24px 0 32px;
+}
+
+.stocktake-form select,
+.stocktake-form input {
+  height: 48px;
+  border: 1px solid #d7d7e2;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.stocktake-add-btn {
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #5146e8;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stocktake-add-btn:hover {
+  background: #4338ca;
+}
