@@ -12,6 +12,8 @@ function Admin() {
   const [search, setSearch] = useState("")
 const [showEditModal, setShowEditModal] = useState(false)
 const [editingProduct, setEditingProduct] = useState(null)
+const [showUserModal, setShowUserModal] = useState(false)
+const [editingUser, setEditingUser] = useState(null)
 
 
   const [newProduct, setNewProduct] = useState({
@@ -245,6 +247,79 @@ const handleUpdateProduct = async () => {
   }
 }
 
+const handleEditUser = (user) => {
+  setEditingUser({
+    UserID: user.UserID,
+    UserName: user.UserName,
+    Name: user.Name,
+    IsAdmin: user.IsAdmin ? 1 : 0
+  })
+
+  setShowUserModal(true)
+}
+
+const handleUpdateUser = async () => {
+  try {
+    const response = await fetch(
+      `/api-edit-user/${editingUser.UserID}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          IsAdmin: Number(editingUser.IsAdmin)
+        })
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      alert(errorText || "Failed to update user")
+      return
+    }
+
+    alert("User updated successfully")
+
+    setShowUserModal(false)
+    setEditingUser(null)
+
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    alert("Update failed")
+  }
+}
+
+const handleDeleteUser = async (userID) => {
+  const confirmed = window.confirm(
+    `Delete user #${userID}?`
+  )
+
+  if (!confirmed) return
+
+  try {
+    const response = await fetch(
+      `/api-delete-user/${userID}`,
+      {
+        method: "DELETE"
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      alert(errorText)
+      return
+    }
+
+    alert("User deleted successfully")
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    alert("Delete failed")
+  }
+}
+
   const username = localStorage.getItem("username") || "admin"
 
   return (
@@ -341,6 +416,7 @@ const handleUpdateProduct = async () => {
                     <th>Full Name</th>
                     <th>Role</th>
                     <th>User ID</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
 
@@ -355,6 +431,23 @@ const handleUpdateProduct = async () => {
                         </span>
                       </td>
                       <td>#{safeText(user.UserID)}</td>
+
+                    <td>
+                    <button
+                        className="admin-edit-btn"
+                        onClick={() => handleEditUser(user)}
+                    >
+                        Edit
+                    </button>
+
+                    <button
+                    className="admin-delete-btn"
+                    onClick={() => handleDeleteUser(user.UserID)}
+                    disabled={String(user.UserName) === String(username)}
+                    >
+                    Delete
+                    </button>
+                    </td>
                     </tr>
                   ))}
                 </tbody>
@@ -616,6 +709,51 @@ const handleUpdateProduct = async () => {
             </div>
         </div>
         )}
+
+        {showUserModal && editingUser && (
+            <div className="modal-overlay">
+                <div className="modal">
+
+                <h3>Edit User</h3>
+
+                <p>
+                    Username: {editingUser.UserName}
+                </p>
+
+                <p>
+                    Name: {editingUser.Name}
+                </p>
+
+                <select
+                value={editingUser.IsAdmin}
+                onChange={(e) =>
+                    setEditingUser({
+                    ...editingUser,
+                    IsAdmin: Number(e.target.value)
+                    })
+                }
+                >
+                <option value={0}>Customer</option>
+                <option value={1}>Admin</option>
+                </select>
+
+                <button onClick={handleUpdateUser}>
+                    Save
+                </button>
+
+                <button
+                    onClick={() => {
+                    setShowUserModal(false)
+                    setEditingUser(null)
+                    }}
+                >
+                    Cancel
+                </button>
+
+                </div>
+            </div>
+            )}
+
     </div>
   )
 }

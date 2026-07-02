@@ -6,15 +6,6 @@ export default defineConfig({
 
   server: {
     proxy: {
-      "/api-login": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-        rewrite: () => "/login",
-        headers: {
-          origin: ""
-        }
-      },
-
       "/api-register": {
         target: "http://localhost:5050",
         changeOrigin: true
@@ -28,6 +19,25 @@ export default defineConfig({
       "/api-edit-product": {
         target: "http://localhost:5050",
         changeOrigin: true
+      },
+
+      "/api-edit-user": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
+      "/api-delete-user": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
+      "/api-login": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+        rewrite: () => "/login",
+        headers: {
+          origin: ""
+        }
       },
 
       "/login": {

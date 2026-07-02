@@ -57,7 +57,6 @@ app.post("/api-register", async (req, res) => {
     }
 
     const setCookie = await getAdminCookie()
-
     const salt = crypto.randomBytes(16).toString("hex")
 
     const hashPW = crypto
@@ -177,6 +176,62 @@ app.patch("/api-edit-product/:id", async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).send("Edit product failed")
+  }
+})
+
+app.patch("/api-edit-user/:id", async (req, res) => {
+  try {
+    const setCookie = await getAdminCookie()
+
+    const editResponse = await fetch(
+      `http://localhost:3001/api/inft3050/User/${req.params.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: setCookie
+        },
+        body: JSON.stringify(req.body)
+      }
+    )
+
+    const resultText = await editResponse.text()
+
+    if (!editResponse.ok) {
+      return res.status(editResponse.status).send(resultText)
+    }
+
+    res.status(200).send(resultText)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Edit user failed")
+  }
+})
+
+app.delete("/api-delete-user/:id", async (req, res) => {
+  try {
+    const setCookie = await getAdminCookie()
+
+    const deleteResponse = await fetch(
+      `http://localhost:3001/api/inft3050/User/${req.params.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Cookie: setCookie
+        }
+      }
+    )
+
+    const resultText = await deleteResponse.text()
+
+    if (!deleteResponse.ok) {
+      return res.status(deleteResponse.status).send(resultText)
+    }
+
+    res.status(200).send(resultText)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Delete user failed")
   }
 })
 
