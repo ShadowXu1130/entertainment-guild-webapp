@@ -10,12 +10,25 @@ function Admin() {
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState("users")
   const [search, setSearch] = useState("")
+const [showEditModal, setShowEditModal] = useState(false)
+const [editingProduct, setEditingProduct] = useState(null)
+
+
+  const [newProduct, setNewProduct] = useState({
+    Name: "",
+    Author: "",
+    Description: "",
+    SubGenre: 1,
+    Published: ""
+  })
 
   const safeText = (value) => {
     if (value === null || value === undefined || value === "") return "N/A"
+
     if (typeof value === "object") {
       return value.Name || value.name || value.ID || value.id || "N/A"
     }
+
     return String(value)
   }
 
@@ -33,30 +46,64 @@ function Admin() {
       return
     }
 
-    fetch("/api/inft3050/Product?limit=300")
+    loadAdminData()
+  }, [navigate])
+
+  const loadAdminData = () => {
+    fetch("/api/inft3050/Product?limit=1000")
       .then((res) => res.json())
       .then((data) => setProducts(data.list || []))
       .catch((err) => console.log(err))
 
-    fetch("/api/inft3050/User?limit=300")
+    fetch("/api/inft3050/User?limit=1000")
       .then((res) => res.json())
       .then((data) => setUsers(data.list || []))
       .catch((err) => console.log(err))
 
-    fetch("/api/inft3050/Stocktake?limit=300")
+    fetch("/api/inft3050/Stocktake?limit=1000")
       .then((res) => res.json())
       .then((data) => setStocktake(data.list || []))
       .catch((err) => console.log(err))
 
-    fetch("/api/inft3050/Orders?limit=300")
+    fetch("/api/inft3050/Orders?limit=1000")
       .then((res) => res.json())
       .then((data) => setOrders(data.list || []))
       .catch((err) => console.log(err))
-  }, [navigate])
+  }
 
   const handleLogout = () => {
     localStorage.clear()
     navigate("/login")
+  }
+
+  const handleDeleteProduct = async (productID) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete product #${productID}?`
+    )
+
+    if (!confirmDelete) return
+
+    try {
+      const response = await fetch(`/api/inft3050/Product/${productID}`, {
+        method: "DELETE",
+        credentials: "include"
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        alert(errorText || "Failed to delete product")
+        return
+      }
+
+      setProducts((prevProducts) =>
+        prevProducts.filter((product) => product.ID !== productID)
+      )
+
+      alert("Product deleted successfully")
+    } catch (error) {
+      console.error(error)
+      alert("Delete failed. Check browser console.")
+    }
   }
 
   const matchesSearch = (values) =>
@@ -105,6 +152,98 @@ function Admin() {
     setActiveTab(tab)
     setSearch("")
   }
+
+const handleAddProduct = async (e) => {
+  e.preventDefault()
+
+  try {
+    const response = await fetch("/api-add-product", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        Name: newProduct.Name,
+        Author: newProduct.Author,
+        Description: newProduct.Description,
+        SubGenre: Number(newProduct.SubGenre),
+        Published: newProduct.Published,
+        LastUpdatedBy: username,
+        LastUpdated: new Date().toISOString().split("T")[0]
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      alert(errorText || "Failed to create product")
+      return
+    }
+
+    setNewProduct({
+      Name: "",
+      Author: "",
+      Description: "",
+      SubGenre: 1,
+      Published: ""
+    })
+
+    alert("Product created successfully")
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    alert("Create failed")
+  }
+}
+
+
+const handleEditProduct = (product) => {
+  setEditingProduct({
+    ID: product.ID,
+    Name: product.Name || "",
+    Author: product.Author || "",
+    Description: product.Description || "",
+    SubGenre: product.SubGenre || 1,
+    Published: product.Published
+      ? product.Published.split("T")[0]
+      : ""
+  })
+
+  setShowEditModal(true)
+}
+
+const handleUpdateProduct = async () => {
+  try {
+    const response = await fetch(`/api-edit-product/${editingProduct.ID}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        Name: editingProduct.Name,
+        Author: editingProduct.Author,
+        Description: editingProduct.Description,
+        SubGenre: Number(editingProduct.SubGenre),
+        Published: editingProduct.Published,
+        LastUpdatedBy: username,
+        LastUpdated: new Date().toISOString().split("T")[0]
+      })
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      alert(errorText || "Failed to update product")
+      return
+    }
+
+    alert("Product updated successfully")
+    setShowEditModal(false)
+    setEditingProduct(null)
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    alert("Update failed")
+  }
+}
 
   const username = localStorage.getItem("username") || "admin"
 
@@ -194,6 +333,7 @@ function Admin() {
           {activeTab === "users" && (
             <div>
               <h2>User Management</h2>
+
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -203,6 +343,7 @@ function Admin() {
                     <th>User ID</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filteredUsers.map((user) => (
                     <tr key={user.UserID}>
@@ -224,6 +365,81 @@ function Admin() {
           {activeTab === "products" && (
             <div>
               <h2>Product Management</h2>
+
+              <form
+                className="admin-product-form"
+                onSubmit={handleAddProduct}
+                >
+                <input
+                    type="text"
+                    placeholder="Product Name"
+                    value={newProduct.Name}
+                    onChange={(e) =>
+                    setNewProduct({
+                        ...newProduct,
+                        Name: e.target.value
+                    })
+                    }
+                    required
+                />
+
+                <input
+                    type="text"
+                    placeholder="Author"
+                    value={newProduct.Author}
+                    onChange={(e) =>
+                    setNewProduct({
+                        ...newProduct,
+                        Author: e.target.value
+                    })
+                    }
+                    required
+                />
+
+                <input
+                    type="number"
+                    placeholder="SubGenre ID"
+                    value={newProduct.SubGenre}
+                    onChange={(e) =>
+                    setNewProduct({
+                        ...newProduct,
+                        SubGenre: e.target.value
+                    })
+                    }
+                    required
+                />
+
+                <input
+                    type="date"
+                    value={newProduct.Published}
+                    onChange={(e) =>
+                    setNewProduct({
+                        ...newProduct,
+                        Published: e.target.value
+                    })
+                    }
+                    required
+                />
+
+                <textarea
+                    placeholder="Description"
+                    value={newProduct.Description}
+                    onChange={(e) =>
+                    setNewProduct({
+                        ...newProduct,
+                        Description: e.target.value
+                    })
+                    }
+                />
+
+                <button
+                    type="submit"
+                    className="admin-add-btn"
+                >
+                    Add Product
+                </button>
+              </form>
+
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -232,26 +448,48 @@ function Admin() {
                     <th>Genre</th>
                     <th>Sub Genre</th>
                     <th>ID</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {filteredProducts.slice(0, 50).map((product) => (
+                  {filteredProducts.slice().reverse().map((product) => (
                     <tr key={product.ID}>
                       <td>{safeText(product.Name)}</td>
                       <td>{safeText(product.Author)}</td>
                       <td>{safeText(product.Genre)}</td>
                       <td>{safeText(product.SubGenre)}</td>
                       <td>#{safeText(product.ID)}</td>
+                      <td>
+                        <button
+                            className="admin-edit-btn"
+                            onClick={() => handleEditProduct(product)}
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            className="admin-delete-btn"
+                            onClick={() => handleDeleteProduct(product.ID)}
+                        >
+                            Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              {filteredProducts.length === 0 && (
+                <p className="profile-empty">No products found.</p>
+              )}
             </div>
           )}
 
           {activeTab === "stocktake" && (
             <div>
               <h2>Inventory / Stocktake</h2>
+
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -261,6 +499,7 @@ function Admin() {
                     <th>Price</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filteredStocktake.slice(0, 50).map((item, index) => (
                     <tr key={index}>
@@ -278,6 +517,7 @@ function Admin() {
           {activeTab === "orders" && (
             <div>
               <h2>Order Management</h2>
+
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -287,6 +527,7 @@ function Admin() {
                     <th>State</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {filteredOrders.map((order, index) => (
                     <tr key={index}>
@@ -302,8 +543,83 @@ function Admin() {
           )}
         </section>
       </main>
+
+      {showEditModal && editingProduct && (
+        <div className="modal-overlay">
+            <div className="modal">
+            <h3>Edit Product</h3>
+
+            <input
+                value={editingProduct.Name}
+                onChange={(e) =>
+                setEditingProduct({
+                    ...editingProduct,
+                    Name: e.target.value
+                })
+                }
+            />
+
+            <input
+                value={editingProduct.Author}
+                onChange={(e) =>
+                setEditingProduct({
+                    ...editingProduct,
+                    Author: e.target.value
+                })
+                }
+            />
+
+            <input
+                type="number"
+                value={editingProduct.SubGenre}
+                onChange={(e) =>
+                setEditingProduct({
+                    ...editingProduct,
+                    SubGenre: e.target.value
+                })
+                }
+            />
+
+            <input
+                type="date"
+                value={editingProduct.Published}
+                onChange={(e) =>
+                setEditingProduct({
+                    ...editingProduct,
+                    Published: e.target.value
+                })
+                }
+            />
+
+            <textarea
+                value={editingProduct.Description}
+                onChange={(e) =>
+                setEditingProduct({
+                    ...editingProduct,
+                    Description: e.target.value
+                })
+                }
+            />
+
+            <button onClick={handleUpdateProduct}>
+                Save
+            </button>
+
+            <button
+                onClick={() => {
+                setShowEditModal(false)
+                setEditingProduct(null)
+                }}
+            >
+                Cancel
+            </button>
+            </div>
+        </div>
+        )}
     </div>
   )
 }
+
+
 
 export default Admin

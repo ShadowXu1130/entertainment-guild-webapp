@@ -20,7 +20,17 @@ export default defineConfig({
         changeOrigin: true
       },
 
-      "/api": {
+      "/api-add-product": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
+      "/api-edit-product": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
+      "/login": {
         target: "http://localhost:3001",
         changeOrigin: true,
         headers: {
@@ -28,7 +38,7 @@ export default defineConfig({
         }
       },
 
-      "/login": {
+      "/api": {
         target: "http://localhost:3001",
         changeOrigin: true,
         headers: {
