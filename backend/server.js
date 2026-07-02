@@ -235,6 +235,35 @@ app.delete("/api-delete-user/:id", async (req, res) => {
   }
 })
 
+app.patch("/api-edit-stocktake/:id", async (req, res) => {
+  try {
+    const setCookie = await getAdminCookie()
+
+    const editResponse = await fetch(
+      `http://localhost:3001/api/inft3050/Stocktake/${req.params.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: setCookie
+        },
+        body: JSON.stringify(req.body)
+      }
+    )
+
+    const resultText = await editResponse.text()
+
+    if (!editResponse.ok) {
+      return res.status(editResponse.status).send(resultText)
+    }
+
+    res.status(200).send(resultText)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Edit stocktake failed")
+  }
+})
+
 const PORT = 5050
 
 app.listen(PORT, () => {

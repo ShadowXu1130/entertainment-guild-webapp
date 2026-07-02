@@ -31,6 +31,11 @@ export default defineConfig({
         changeOrigin: true
       },
 
+      "/api-edit-stocktake": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
       "/api-login": {
         target: "http://localhost:3001",
         changeOrigin: true,

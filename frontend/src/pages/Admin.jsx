@@ -14,6 +14,8 @@ const [showEditModal, setShowEditModal] = useState(false)
 const [editingProduct, setEditingProduct] = useState(null)
 const [showUserModal, setShowUserModal] = useState(false)
 const [editingUser, setEditingUser] = useState(null)
+const [showStockModal, setShowStockModal] = useState(false)
+const [editingStock, setEditingStock] = useState(null)
 
 
   const [newProduct, setNewProduct] = useState({
@@ -320,6 +322,50 @@ const handleDeleteUser = async (userID) => {
   }
 }
 
+const handleEditStock = (item) => {
+  setEditingStock({
+    ItemId: item.ItemId || item.ItemID,
+    Quantity: item.Quantity,
+    Price: item.Price
+  })
+
+  setShowStockModal(true)
+}
+
+const handleUpdateStock = async () => {
+  try {
+    const response = await fetch(
+      `/api-edit-stocktake/${editingStock.ItemId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          Quantity: Number(editingStock.Quantity),
+          Price: Number(editingStock.Price)
+        })
+      }
+    )
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      alert(errorText)
+      return
+    }
+
+    alert("Stock updated successfully")
+
+    setShowStockModal(false)
+    setEditingStock(null)
+
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    alert("Update failed")
+  }
+}
+
   const username = localStorage.getItem("username") || "admin"
 
   return (
@@ -590,6 +636,7 @@ const handleDeleteUser = async (userID) => {
                     <th>Product ID</th>
                     <th>Quantity</th>
                     <th>Price</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
 
@@ -600,6 +647,15 @@ const handleDeleteUser = async (userID) => {
                       <td>{safeText(item.ProductId || item.ProductID)}</td>
                       <td>{safeText(item.Quantity)}</td>
                       <td>S${safeText(item.Price)}</td>
+
+                        <td>
+                        <button
+                            className="admin-edit-btn"
+                            onClick={() => handleEditStock(item)}
+                        >
+                            Edit
+                        </button>
+                        </td>
                     </tr>
                   ))}
                 </tbody>
@@ -753,6 +809,52 @@ const handleDeleteUser = async (userID) => {
                 </div>
             </div>
             )}
+
+            {showStockModal && editingStock && (
+                <div className="modal-overlay">
+                    <div className="modal">
+
+                    <h3>Edit Stock</h3>
+
+                    <input
+                        type="number"
+                        value={editingStock.Quantity}
+                        onChange={(e) =>
+                        setEditingStock({
+                            ...editingStock,
+                            Quantity: e.target.value
+                        })
+                        }
+                    />
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        value={editingStock.Price}
+                        onChange={(e) =>
+                        setEditingStock({
+                            ...editingStock,
+                            Price: e.target.value
+                        })
+                        }
+                    />
+
+                    <button onClick={handleUpdateStock}>
+                        Save
+                    </button>
+
+                    <button
+                        onClick={() => {
+                        setShowStockModal(false)
+                        setEditingStock(null)
+                        }}
+                    >
+                        Cancel
+                    </button>
+
+                    </div>
+                </div>
+                )}
 
     </div>
   )
