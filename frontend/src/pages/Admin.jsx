@@ -8,6 +8,7 @@ function Admin() {
   const [users, setUsers] = useState([])
   const [stocktake, setStocktake] = useState([])
   const [orders, setOrders] = useState([])
+  const [sources, setSources] = useState([])
   const [activeTab, setActiveTab] = useState("users")
   const [search, setSearch] = useState("")
 const [showEditModal, setShowEditModal] = useState(false)
@@ -22,6 +23,8 @@ const [movieGenres, setMovieGenres] = useState([])
 const [bookGenres, setBookGenres] = useState([])
 const [productPage, setProductPage] = useState(1)
 const productsPerPage = 25
+const [stockPage, setStockPage] = useState(1)
+const stockPerPage = 25
 
 
   const [newProduct, setNewProduct] = useState({
@@ -75,6 +78,11 @@ const productsPerPage = 25
       .then((res) => res.json())
       .then((data) => setStocktake(data.list || []))
       .catch((err) => console.log(err))
+
+    fetch("/api/inft3050/Source?limit=1000")
+        .then((res) => res.json())
+        .then((data) => setSources(data.list || []))
+        .catch((err) => console.log(err))
 
     fetch("/api/inft3050/Orders?limit=1000")
       .then((res) => res.json())
@@ -165,14 +173,31 @@ const paginatedProducts = sortedProducts.slice(
 
   const filteredStocktake = stocktake.filter((item) =>
     matchesSearch([
-      item.ItemId,
-      item.ItemID,
-      item.ProductId,
-      item.ProductID,
-      item.Quantity,
-      item.Price
+        item.ItemId,
+        item.ItemID,
+        item.Sourceid,
+        item.SourceId,
+        item.SourceID,
+        item.ProductId,
+        item.ProductID,
+        item.Quantity,
+        item.Price
     ])
-  )
+    )
+
+    const sortedStocktake = filteredStocktake
+    .slice()
+    .sort(
+        (a, b) =>
+        Number(a.ItemId || a.ItemID) - Number(b.ItemId || b.ItemID)
+    )
+
+    const totalStockPages = Math.ceil(sortedStocktake.length / stockPerPage)
+
+    const paginatedStocktake = sortedStocktake.slice(
+    (stockPage - 1) * stockPerPage,
+    stockPage * stockPerPage
+    )
 
   const filteredOrders = orders.filter((order, index) =>
     matchesSearch([
@@ -359,8 +384,13 @@ const handleDeleteUser = async (userID) => {
 }
 
 const handleEditStock = (item) => {
+  const sourceID = item.Sourceid || item.SourceId || item.SourceID
+  const productID = item.ProductId || item.ProductID || item.Productid
+
   setEditingStock({
     ItemId: item.ItemId || item.ItemID,
+    SourceName: getSourceNameByID(sourceID),
+    ProductName: getProductNameByID(productID),
     Quantity: item.Quantity,
     Price: item.Price
   })
@@ -461,10 +491,33 @@ const getSubGenreName = (product) => {
   return subGenreId
 }
 
+const getProductNameByID = (productID) => {
+  const found = products.find(
+    (product) => Number(product.ID) === Number(productID)
+  )
+
+  return found ? found.Name : "N/A"
+}
+
+const getSourceNameByID = (sourceID) => {
+  const found = sources.find(
+    (source) =>
+      Number(source.Sourceid || source.SourceId || source.SourceID) ===
+      Number(sourceID)
+  )
+
+  return found
+    ? safeText(found.Source_name || found.SourceName || found.Name)
+    : "N/A"
+}
+
+
+
 const changeTab = (tab) => {
   setActiveTab(tab)
   setSearch("")
   setProductPage(1)
+  setStockPage(1)
 }
 
   const username = localStorage.getItem("username") || "admin"
@@ -536,12 +589,7 @@ const changeTab = (tab) => {
 
         <section className="admin-table-card">
           <div className="admin-table-header">
-            <div className="admin-tabs-clean">
-              <button className={activeTab === "users" ? "active" : ""} onClick={() => changeTab("users")}>Users</button>
-              <button className={activeTab === "products" ? "active" : ""} onClick={() => changeTab("products")}>Products</button>
-              <button className={activeTab === "stocktake" ? "active" : ""} onClick={() => changeTab("stocktake")}>Stocktake</button>
-              <button className={activeTab === "orders" ? "active" : ""} onClick={() => changeTab("orders")}>Orders</button>
-            </div>
+            
 
             <input
             className="admin-search"
@@ -551,7 +599,8 @@ const changeTab = (tab) => {
             onChange={(e) => {
                 setSearch(e.target.value)
                 setProductPage(1)
-            }}
+                setStockPage(1)
+                }}
             />
           </div>
 
@@ -765,6 +814,8 @@ const changeTab = (tab) => {
                 </tbody>
               </table>
 
+
+
                 <div className="pagination">
                 <button
                     onClick={() => setProductPage((prev) => Math.max(prev - 1, 1))}
@@ -790,6 +841,11 @@ const changeTab = (tab) => {
                 {filteredProducts.length === 0 && (
                 <p className="profile-empty">No products found.</p>
                 )}
+
+
+                {filteredProducts.length === 0 && (
+                <p className="profile-empty">No products found.</p>
+                )}
             </div>
           )}
 
@@ -799,22 +855,37 @@ const changeTab = (tab) => {
 
               <table className="admin-table">
                 <thead>
-                  <tr>
+                <tr>
                     <th>Item ID</th>
-                    <th>Product ID</th>
+                    <th>Source</th>
+                    <th>Product</th>
                     <th>Quantity</th>
                     <th>Price</th>
                     <th>Action</th>
-                  </tr>
+                </tr>
                 </thead>
 
                 <tbody>
-                  {filteredStocktake.slice(0, 50).map((item, index) => (
+                  {paginatedStocktake.map((item, index) => (
                     <tr key={index}>
                       <td>#{safeText(item.ItemId || item.ItemID)}</td>
-                      <td>{safeText(item.ProductId || item.ProductID)}</td>
-                      <td>{safeText(item.Quantity)}</td>
-                      <td>S${safeText(item.Price)}</td>
+                      <td>
+                        {getSourceNameByID(
+                        item.Sourceid || item.SourceId || item.SourceID
+                        )}
+                        </td>
+
+                        <td>
+                        {getProductNameByID(
+                        item.ProductId || item.ProductID || item.Productid
+                        )}
+                        </td>
+
+                        <td>{safeText(item.Quantity)}</td>
+
+                        <td>
+                        S${safeText(item.Price)}
+                        </td>
 
                         <td>
                         <button
@@ -828,6 +899,33 @@ const changeTab = (tab) => {
                   ))}
                 </tbody>
               </table>
+
+
+
+                <div className="pagination">
+                <button
+                    onClick={() => setStockPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={stockPage === 1}
+                >
+                    Previous
+                </button>
+
+                <span>
+                    Page {stockPage} of {totalStockPages}
+                </span>
+
+                <button
+                    onClick={() =>
+                    setStockPage((prev) => Math.min(prev + 1, totalStockPages))
+                    }
+                    disabled={stockPage === totalStockPages}
+                >
+                    Next
+                </button>
+                </div>
+
+
+
             </div>
           )}
 
@@ -835,27 +933,53 @@ const changeTab = (tab) => {
             <div>
               <h2>Order Management</h2>
 
+              
+
               <table className="admin-table">
                 <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Address</th>
-                    <th>State</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredOrders.map((order, index) => (
-                    <tr key={index}>
-                      <td>#{safeText(order.orderID || order.OrderID || index + 1)}</td>
-                      <td>{safeText(order.customer || order.Customer)}</td>
-                      <td>{safeText(order.StreetAddress || order.streetAddress)}</td>
-                      <td>{safeText(order.State || order.state)}</td>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Address</th>
+                        <th>Suburb</th>
+                        <th>State</th>
+                        <th>Post Code</th>
+                        <th>Items</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </thead>
+
+                    <tbody>
+                    {filteredOrders.map((order) => (
+                        <tr key={order.OrderID}>
+                        <td>#{order.OrderID}</td>
+
+                        <td>
+                            #{order.Customer}
+                        </td>
+
+                        <td>
+                            {order.StreetAddress}
+                        </td>
+
+                        <td>
+                            {order.Suburb}
+                        </td>
+
+                        <td>
+                            {order.State}
+                        </td>
+
+                        <td>
+                            {order.PostCode}
+                        </td>
+
+                        <td>
+                            {order["ProductsInOrders List"]?.length || 0}
+                        </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
 
               
             </div>
@@ -1006,90 +1130,124 @@ const changeTab = (tab) => {
 
         {showUserModal && editingUser && (
             <div className="modal-overlay">
-                <div className="modal">
+                <div className="modal user-modal">
 
                 <h3>Edit User</h3>
 
-                <p>
-                    Username: {editingUser.UserName}
-                </p>
+                <div className="modal-form">
 
-                <p>
-                    Name: {editingUser.Name}
-                </p>
+                    <label>Username</label>
+                    <input
+                    value={editingUser.UserName}
+                    disabled
+                    />
 
-                <select
-                value={editingUser.IsAdmin}
-                onChange={(e) =>
-                    setEditingUser({
-                    ...editingUser,
-                    IsAdmin: Number(e.target.value)
-                    })
-                }
-                >
-                <option value={0}>Customer</option>
-                <option value={1}>Admin</option>
-                </select>
+                    <label>Full Name</label>
+                    <input
+                    value={editingUser.Name}
+                    disabled
+                    />
 
-                <button onClick={handleUpdateUser}>
-                    Save
-                </button>
+                    <label>Role</label>
+                    <select
+                    value={editingUser.IsAdmin}
+                    onChange={(e) =>
+                        setEditingUser({
+                        ...editingUser,
+                        IsAdmin: Number(e.target.value)
+                        })
+                    }
+                    >
+                    <option value={0}>Customer</option>
+                    <option value={1}>Admin</option>
+                    </select>
 
-                <button
-                    onClick={() => {
-                    setShowUserModal(false)
-                    setEditingUser(null)
-                    }}
-                >
-                    Cancel
-                </button>
+                    <div className="modal-actions">
+                    <button
+                        className="modal-save-btn"
+                        onClick={handleUpdateUser}
+                    >
+                        Save Changes
+                    </button>
 
+                    <button
+                        className="modal-cancel-btn"
+                        onClick={() => {
+                        setShowUserModal(false)
+                        setEditingUser(null)
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    </div>
+
+                </div>
                 </div>
             </div>
             )}
 
             {showStockModal && editingStock && (
                 <div className="modal-overlay">
-                    <div className="modal">
-
+                    <div className="modal stock-modal">
                     <h3>Edit Stock</h3>
 
-                    <input
-                        type="number"
-                        value={editingStock.Quantity}
-                        onChange={(e) =>
-                        setEditingStock({
-                            ...editingStock,
-                            Quantity: e.target.value
-                        })
-                        }
-                    />
+                    <div className="modal-form">
+                        <label>Source</label>
+                        <input value={editingStock.SourceName} disabled />
 
-                    <input
-                        type="number"
-                        step="0.01"
-                        value={editingStock.Price}
-                        onChange={(e) =>
-                        setEditingStock({
-                            ...editingStock,
-                            Price: e.target.value
-                        })
-                        }
-                    />
+                        <label>Product</label>
+                        <input value={editingStock.ProductName} disabled />
 
-                    <button onClick={handleUpdateStock}>
-                        Save
-                    </button>
+                        <div className="stock-fields">
+                            <div className="stock-field">
+                                <label>Quantity</label>
+                                <input
+                                type="number"
+                                value={editingStock.Quantity}
+                                onChange={(e) =>
+                                    setEditingStock({
+                                    ...editingStock,
+                                    Quantity: e.target.value
+                                    })
+                                }
+                                />
+                            </div>
 
-                    <button
-                        onClick={() => {
-                        setShowStockModal(false)
-                        setEditingStock(null)
-                        }}
-                    >
-                        Cancel
-                    </button>
+                            <div className="stock-field">
+                                <label>Price S$</label>
+                                <input
+                                type="number"
+                                step="0.01"
+                                value={editingStock.Price}
+                                onChange={(e) =>
+                                    setEditingStock({
+                                    ...editingStock,
+                                    Price: e.target.value
+                                    })
+                                }
+                                />
+                            </div>
+                            </div>
 
+                        <div className="modal-actions">
+                        <button
+                            className="modal-cancel-btn"
+                            onClick={() => {
+                            setShowStockModal(false)
+                            setEditingStock(null)
+                            }}
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            className="modal-save-btn"
+                            onClick={handleUpdateStock}
+                        >
+                            Save Changes
+                        </button>
+                        </div>
+                    </div>
                     </div>
                 </div>
                 )}
