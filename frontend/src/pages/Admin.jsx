@@ -250,6 +250,19 @@ const paginatedOrders = sortedOrders.slice(
 const handleAddProduct = async (e) => {
   e.preventDefault()
 
+  const duplicateProduct = products.find(
+    (product) =>
+      safeText(product.Name).toLowerCase() === newProduct.Name.toLowerCase() &&
+      safeText(product.Author).toLowerCase() === newProduct.Author.toLowerCase() &&
+      getProductGenreName(product.ID, product.Genre) === newProduct.Genre &&
+      Number(product.SubGenre) === Number(newProduct.SubGenre)
+  )
+
+  if (duplicateProduct) {
+    alert("This product already exists")
+    return
+  }
+
   try {
     const response = await fetch("/api-add-product", {
       method: "POST",
@@ -265,7 +278,7 @@ const handleAddProduct = async (e) => {
         Published: newProduct.Published,
         LastUpdatedBy: username,
         LastUpdated: new Date().toISOString().split("T")[0]
-        })
+      })
     })
 
     if (!response.ok) {
@@ -275,12 +288,12 @@ const handleAddProduct = async (e) => {
     }
 
     setNewProduct({
-    Name: "",
-    Author: "",
-    Description: "",
-    Genre: "",
-    SubGenre: "",
-    Published: ""
+      Name: "",
+      Author: "",
+      Description: "",
+      Genre: "",
+      SubGenre: "",
+      Published: ""
     })
 
     alert("Product created successfully")
@@ -467,36 +480,79 @@ const handleUpdateStock = async () => {
   }
 }
 
+const handleDeleteStock = async (itemID) => {
+  const confirmed = window.confirm(`Delete stocktake #${itemID}?`)
+  if (!confirmed) return
+
+  try {
+    const response = await fetch(`/api-delete-stocktake/${itemID}`, {
+      method: "DELETE"
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      alert(errorText || "Failed to delete stocktake")
+      return
+    }
+
+    alert("Stocktake deleted successfully")
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    alert("Delete failed")
+  }
+}
+
 const handleAddStock = async (e) => {
   e.preventDefault()
 
-  const response = await fetch("/api-add-stocktake", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      SourceId: Number(newStock.SourceId),
-      ProductId: Number(newStock.ProductId),
-      Quantity: Number(newStock.Quantity),
-      Price: Number(newStock.Price)
-    })
+  const duplicateStock = stocktake.find((item) => {
+    const itemSourceId = item.Sourceid || item.SourceId || item.SourceID
+    const itemProductId = item.ProductId || item.ProductID || item.Productid
+
+    return (
+      Number(itemSourceId) === Number(newStock.SourceId) &&
+      Number(itemProductId) === Number(newStock.ProductId)
+    )
   })
 
-  if (!response.ok) {
-    alert(await response.text())
+  if (duplicateStock) {
+    alert("This stocktake record already exists")
     return
   }
 
-  setNewStock({
-    SourceId: "",
-    ProductId: "",
-    Quantity: "",
-    Price: ""
-  })
+  try {
+    const response = await fetch("/api-add-stocktake", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        SourceId: Number(newStock.SourceId),
+        ProductId: Number(newStock.ProductId),
+        Quantity: Number(newStock.Quantity),
+        Price: Number(newStock.Price)
+      })
+    })
 
-  alert("Stocktake created successfully")
-  loadAdminData()
+    if (!response.ok) {
+      alert(await response.text())
+      return
+    }
+
+    setNewStock({
+      SourceId: "",
+      ProductId: "",
+      Quantity: "",
+      Price: ""
+    })
+
+    alert("Stocktake created successfully")
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    alert("Create stocktake failed")
+  }
 }
 
 const getGenreIDByName = (genreName) => {
@@ -1041,13 +1097,24 @@ const changeTab = (tab) => {
                         </td>
 
                         <td>
-                        <button
-                            className="admin-edit-btn"
-                            onClick={() => handleEditStock(item)}
-                        >
-                            Edit
-                        </button>
-                        </td>
+                            <div className="action-buttons">
+                                <button
+                                className="admin-edit-btn"
+                                onClick={() => handleEditStock(item)}
+                                >
+                                Edit
+                                </button>
+
+                                <button
+                                className="admin-delete-btn"
+                                onClick={() =>
+                                    handleDeleteStock(item.ItemId || item.ItemID)
+                                }
+                                >
+                                Delete
+                                </button>
+                            </div>
+                            </td>
                     </tr>
                   ))}
                 </tbody>

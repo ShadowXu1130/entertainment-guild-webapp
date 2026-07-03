@@ -306,6 +306,33 @@ app.post("/api-add-stocktake", async (req, res) => {
   }
 })
 
+app.delete("/api-delete-stocktake/:id", async (req, res) => {
+  try {
+    const setCookie = await getAdminCookie()
+
+    const deleteResponse = await fetch(
+      `http://localhost:3001/api/inft3050/Stocktake/${req.params.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Cookie: setCookie
+        }
+      }
+    )
+
+    const resultText = await deleteResponse.text()
+
+    if (!deleteResponse.ok) {
+      return res.status(deleteResponse.status).send(resultText)
+    }
+
+    res.status(200).send(resultText)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Delete stocktake failed")
+  }
+})
+
 const PORT = 5050
 
 app.listen(PORT, () => {
