@@ -25,6 +25,10 @@ const [productPage, setProductPage] = useState(1)
 const productsPerPage = 25
 const [stockPage, setStockPage] = useState(1)
 const stockPerPage = 25
+const [userPage, setUserPage] = useState(1)
+const usersPerPage = 25
+const [orderPage, setOrderPage] = useState(1)
+const ordersPerPage = 25
 
 
   const [newProduct, setNewProduct] = useState({
@@ -178,6 +182,17 @@ const paginatedProducts = sortedProducts.slice(
     matchesSearch([user.UserID, user.UserName, user.Name, user.Email])
   )
 
+  const sortedUsers = filteredUsers
+  .slice()
+  .sort((a, b) => Number(a.UserID) - Number(b.UserID))
+
+const totalUserPages = Math.ceil(sortedUsers.length / usersPerPage)
+
+const paginatedUsers = sortedUsers.slice(
+  (userPage - 1) * usersPerPage,
+  userPage * usersPerPage
+)
+
   const filteredStocktake = stocktake.filter((item) =>
     matchesSearch([
         item.ItemId,
@@ -217,6 +232,19 @@ const paginatedProducts = sortedProducts.slice(
       order.State
     ])
   )
+
+  const sortedOrders = filteredOrders
+  .slice()
+  .sort((a, b) => Number(a.OrderID) - Number(b.OrderID))
+
+const totalOrderPages = Math.ceil(
+  sortedOrders.length / ordersPerPage
+)
+
+const paginatedOrders = sortedOrders.slice(
+  (orderPage - 1) * ordersPerPage,
+  orderPage * ordersPerPage
+)
 
 
 const handleAddProduct = async (e) => {
@@ -557,6 +585,8 @@ const changeTab = (tab) => {
   setSearch("")
   setProductPage(1)
   setStockPage(1)
+  setUserPage(1)
+  setOrderPage(1)
 }
 
   const username = localStorage.getItem("username") || "admin"
@@ -639,6 +669,8 @@ const changeTab = (tab) => {
                 setSearch(e.target.value)
                 setProductPage(1)
                 setStockPage(1)
+                setUserPage(1)
+                setOrderPage(1)
                 }}
             />
           </div>
@@ -659,7 +691,7 @@ const changeTab = (tab) => {
                 </thead>
 
                 <tbody>
-                  {filteredUsers.map((user) => (
+                  {paginatedUsers.map((user) => (
                     <tr key={user.UserID}>
                       <td>{safeText(user.UserName)}</td>
                       <td>{safeText(user.Name)}</td>
@@ -692,6 +724,28 @@ const changeTab = (tab) => {
                   ))}
                 </tbody>
               </table>
+
+              <div className="pagination">
+                <button
+                    onClick={() => setUserPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={userPage === 1}
+                >
+                    Previous
+                </button>
+
+                <span>
+                    Page {userPage} of {totalUserPages}
+                </span>
+
+                <button
+                    onClick={() =>
+                    setUserPage((prev) => Math.min(prev + 1, totalUserPages))
+                    }
+                    disabled={userPage === totalUserPages}
+                >
+                    Next
+                </button>
+                </div>
             </div>
           )}
 
@@ -1048,7 +1102,7 @@ const changeTab = (tab) => {
                     </thead>
 
                     <tbody>
-                    {filteredOrders.map((order) => (
+                    {paginatedOrders.map((order) => (
                         <tr key={order.OrderID}>
                         <td>#{order.OrderID}</td>
 
@@ -1079,6 +1133,32 @@ const changeTab = (tab) => {
                     ))}
                     </tbody>
                 </table>
+
+                <div className="pagination">
+                    <button
+                        onClick={() =>
+                        setOrderPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        disabled={orderPage === 1}
+                    >
+                        Previous
+                    </button>
+
+                    <span>
+                        Page {orderPage} of {totalOrderPages}
+                    </span>
+
+                    <button
+                        onClick={() =>
+                        setOrderPage(
+                            (prev) => Math.min(prev + 1, totalOrderPages)
+                        )
+                        }
+                        disabled={orderPage === totalOrderPages}
+                    >
+                        Next
+                    </button>
+                    </div>
 
               
             </div>
