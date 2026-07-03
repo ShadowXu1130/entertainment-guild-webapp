@@ -1,21 +1,48 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 function Profile() {
   const [user, setUser] = useState(null)
   const [customer, setCustomer] = useState(null)
   const [orders, setOrders] = useState([])
+  const navigate = useNavigate()
+
   const [showContactModal, setShowContactModal] = useState(false)
+  const [showAddressModal, setShowAddressModal] = useState(false)
 
   const [editingContact, setEditingContact] = useState({
     Email: "",
     PhoneNumber: ""
   })
 
+  const [editingAddress, setEditingAddress] = useState({
+    StreetAddress: "",
+    Suburb: "",
+    State: "",
+    PostCode: ""
+  })
+
   const username = localStorage.getItem("username")
+  const unavailableText = "Not available for this account"
 
   useEffect(() => {
     loadProfile()
   }, [])
+
+  const safeText = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return unavailableText
+    }
+
+    return String(value)
+  }
+
+  const maskCardNumber = (cardNumber) => {
+    if (!cardNumber) return unavailableText
+
+    const value = String(cardNumber)
+    return `**** **** **** ${value.slice(-4)}`
+  }
 
   const loadProfile = async () => {
     const userRes = await fetch(`/api-profile-user/${username}`)
@@ -28,8 +55,6 @@ function Profile() {
 
     setUser(currentUser)
 
-    if (!currentUser) return
-
     const customerRes = await fetch("/api/inft3050/TO?limit=1000")
     const customerData = await customerRes.json()
 
@@ -37,14 +62,24 @@ function Profile() {
       (c) => Number(c.PatronId) === Number(currentUser.UserID)
     )
 
-    setCustomer(currentCustomer)
-
-    if (!currentCustomer) return
+    setCustomer(currentCustomer || null)
 
     setEditingContact({
-      Email: currentCustomer.Email || "",
-      PhoneNumber: currentCustomer.PhoneNumber || ""
+      Email: currentCustomer?.Email || currentUser.Email || "",
+      PhoneNumber: currentCustomer?.PhoneNumber || ""
     })
+
+    setEditingAddress({
+      StreetAddress: currentCustomer?.StreetAddress || "",
+      Suburb: currentCustomer?.Suburb || "",
+      State: currentCustomer?.State || "",
+      PostCode: currentCustomer?.PostCode || ""
+    })
+
+    if (!currentCustomer) {
+      setOrders([])
+      return
+    }
 
     const orderRes = await fetch("/api/inft3050/Orders?limit=1000")
     const orderData = await orderRes.json()
@@ -57,10 +92,13 @@ function Profile() {
   }
 
   const handleUpdateContact = async () => {
-  try {
-    const response = await fetch(
-      `/api-edit-user/${user.UserID}`,
-      {
+    try {
+      if (!user?.UserID) {
+        alert("User record not found")
+        return
+      }
+
+      const response = await fetch(`/api-edit-user/${user.UserID}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"
@@ -68,27 +106,66 @@ function Profile() {
         body: JSON.stringify({
           Email: editingContact.Email
         })
+      })
+
+      const resultText = await response.text()
+
+      if (!response.ok) {
+        alert(resultText || "Update failed")
+        return
       }
-    )
 
-    if (!response.ok) {
-      alert(await response.text())
-      return
+      alert("Email updated successfully")
+      setShowContactModal(false)
+      loadProfile()
+    } catch (error) {
+      console.error(error)
+      alert("Update failed")
     }
-
-    alert("Email updated successfully")
-
-    setShowContactModal(false)
-    loadProfile()
-  } catch (error) {
-    console.error(error)
-    alert("Update failed")
   }
-}
 
-  const safeText = (value) => {
-    if (value === null || value === undefined || value === "") return "N/A"
-    return String(value)
+  const handleUpdateAddress = async () => {
+    try {
+      if (!customer?.CustomerID) {
+        alert("Customer record not found")
+        return
+      }
+
+      const response = await fetch(
+        `/api-update-customer/${customer.CustomerID}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            StreetAddress: editingAddress.StreetAddress,
+            Suburb: editingAddress.Suburb,
+            State: editingAddress.State,
+            PostCode: editingAddress.PostCode
+          })
+        }
+      )
+
+      const resultText = await response.text()
+
+      if (!response.ok) {
+        alert(resultText || "Update failed")
+        return
+      }
+
+      alert("Address updated successfully")
+      setShowAddressModal(false)
+      loadProfile()
+    } catch (error) {
+      console.error(error)
+      alert("Update failed")
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.clear()
+    navigate("/login")
   }
 
   return (
@@ -131,20 +208,30 @@ function Profile() {
           <h2>Contact</h2>
 
           <div className="profile-row">
-            <span>Email</span>
-            <strong>{safeText(user?.Email)}</strong>
+            <span className="profile-label">Email</span>
+            <span className="profile-value">
+              {safeText(customer?.Email || user?.Email)}
+            </span>
+          </div>
+
+          <div className="profile-row">
+            <span className="profile-label">Phone</span>
+            <span className="profile-value">
+              {safeText(customer?.PhoneNumber)}
+            </span>
           </div>
 
           <button
             className="profile-edit-btn"
             onClick={() => {
               setEditingContact({
-                Email: user?.Email || ""
+                Email: customer?.Email || user?.Email || "",
+                PhoneNumber: customer?.PhoneNumber || ""
               })
               setShowContactModal(true)
             }}
           >
-            Edit Email
+            Edit Contact
           </button>
         </div>
 
@@ -152,19 +239,59 @@ function Profile() {
           <h2>Address</h2>
 
           <div className="profile-address">
-            <p>{safeText(customer?.StreetAddress)}</p>
-            <p>
-              {safeText(customer?.Suburb)}, {safeText(customer?.State)}{" "}
-              {safeText(customer?.PostCode)}
-            </p>
+            {customer?.CustomerID ? (
+              <>
+                <p>{safeText(customer?.StreetAddress)}</p>
+                <p>
+                  {safeText(customer?.Suburb)},
+                  {" "}
+                  {safeText(customer?.State)}
+                  {" "}
+                  {safeText(customer?.PostCode)}
+                </p>
+              </>
+            ) : (
+              <p>{unavailableText}</p>
+            )}
           </div>
+        </div>
+
+        <div className="profile-card wide">
+          <h2>Payment Information</h2>
+
+          {customer?.CustomerID ? (
+            <>
+              <div className="profile-row">
+                <span className="profile-label">Card Owner</span>
+                <span className="profile-value">
+                  {safeText(customer?.CardOwner)}
+                </span>
+              </div>
+
+              <div className="profile-row">
+                <span className="profile-label">Card Number</span>
+                <span className="profile-value">
+                  {maskCardNumber(customer?.CardNumber)}
+                </span>
+              </div>
+
+              <div className="profile-row">
+                <span className="profile-label">Expiry</span>
+                <span className="profile-value">
+                  {safeText(customer?.Expiry)}
+                </span>
+              </div>
+            </>
+          ) : (
+            <p className="profile-empty">{unavailableText}</p>
+          )}
         </div>
 
         <div className="profile-card wide">
           <h2>Order History</h2>
 
           {orders.length === 0 ? (
-            <p className="profile-empty">No orders found.</p>
+            <p className="profile-empty">{unavailableText}</p>
           ) : (
             <table className="profile-table">
               <thead>
@@ -193,16 +320,25 @@ function Profile() {
             </table>
           )}
         </div>
+
+        <div className="profile-logout-container">
+          <button
+            className="profile-logout-btn"
+            onClick={handleLogout}
+          >
+            Log out
+          </button>
+        </div>
+
       </section>
 
       {showContactModal && (
         <div className="modal-overlay">
           <div className="modal contact-modal">
-            <h3>Edit Email</h3>
+            <h3>Edit Contact</h3>
 
             <div className="modal-form">
               <label>Email</label>
-
               <input
                 type="email"
                 value={editingContact.Email}
@@ -212,6 +348,12 @@ function Profile() {
                     Email: e.target.value
                   })
                 }
+              />
+
+              <label>Phone Number</label>
+              <input
+                value={editingContact.PhoneNumber || unavailableText}
+                disabled
               />
 
               <div className="modal-actions">
@@ -225,6 +367,76 @@ function Profile() {
                 <button
                   className="modal-cancel-btn"
                   onClick={() => setShowContactModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddressModal && (
+        <div className="modal-overlay">
+          <div className="modal contact-modal">
+            <h3>Edit Address</h3>
+
+            <div className="modal-form">
+              <label>Street Address</label>
+              <input
+                value={editingAddress.StreetAddress}
+                onChange={(e) =>
+                  setEditingAddress({
+                    ...editingAddress,
+                    StreetAddress: e.target.value
+                  })
+                }
+              />
+
+              <label>Suburb</label>
+              <input
+                value={editingAddress.Suburb}
+                onChange={(e) =>
+                  setEditingAddress({
+                    ...editingAddress,
+                    Suburb: e.target.value
+                  })
+                }
+              />
+
+              <label>State</label>
+              <input
+                value={editingAddress.State}
+                onChange={(e) =>
+                  setEditingAddress({
+                    ...editingAddress,
+                    State: e.target.value
+                  })
+                }
+              />
+
+              <label>Post Code</label>
+              <input
+                value={editingAddress.PostCode}
+                onChange={(e) =>
+                  setEditingAddress({
+                    ...editingAddress,
+                    PostCode: e.target.value
+                  })
+                }
+              />
+
+              <div className="modal-actions">
+                <button
+                  className="modal-save-btn"
+                  onClick={handleUpdateAddress}
+                >
+                  Save Changes
+                </button>
+
+                <button
+                  className="modal-cancel-btn"
+                  onClick={() => setShowAddressModal(false)}
                 >
                   Cancel
                 </button>
