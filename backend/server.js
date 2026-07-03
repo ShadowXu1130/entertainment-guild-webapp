@@ -333,6 +333,144 @@ app.delete("/api-delete-stocktake/:id", async (req, res) => {
   }
 })
 
+app.post("/api-create-customer", async (req, res) => {
+  try {
+    const setCookie = await getAdminCookie()
+
+    const {
+      PatronId,
+      Email,
+      PhoneNumber,
+      StreetAddress,
+      PostCode,
+      Suburb,
+      State,
+      Name
+    } = req.body
+
+    const patronResponse = await fetch(
+      "http://localhost:3001/api/inft3050/Patrons",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: setCookie
+        },
+        body: JSON.stringify({
+          UserID: Number(PatronId),
+          Email: Email || "",
+          Name: Name || "",
+          Salt: "",
+          HashedPW: ""
+        })
+      }
+    )
+
+    const patronText = await patronResponse.text()
+
+    if (!patronResponse.ok && !patronText.toLowerCase().includes("duplicate")) {
+      return res.status(patronResponse.status).send(patronText)
+    }
+
+    const createResponse = await fetch(
+      "http://localhost:3001/api/inft3050/TO",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: setCookie
+        },
+        body: JSON.stringify({
+          PatronId: Number(PatronId),
+          Email: Email || "",
+          PhoneNumber: PhoneNumber || "",
+          StreetAddress: StreetAddress || "",
+          PostCode: PostCode || "",
+          Suburb: Suburb || "",
+          State: State || ""
+        })
+      }
+    )
+
+    const resultText = await createResponse.text()
+
+    if (!createResponse.ok) {
+      return res.status(createResponse.status).send(resultText)
+    }
+
+    res.status(201).send(resultText)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Create customer failed")
+  }
+})
+
+app.patch("/api-update-customer/:id", async (req, res) => {
+  try {
+    const setCookie = await getAdminCookie()
+
+    const updateResponse = await fetch(
+      `http://localhost:3001/api/inft3050/TO/${req.params.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: setCookie
+        },
+        body: JSON.stringify({
+          Email: req.body.Email,
+          PhoneNumber: req.body.PhoneNumber
+        })
+      }
+    )
+
+    const resultText = await updateResponse.text()
+
+    if (!updateResponse.ok) {
+      return res.status(updateResponse.status).send(resultText)
+    }
+
+    res.status(200).send(resultText)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Update customer failed")
+  }
+})
+
+app.get("/api-profile-user/:username", async (req, res) => {
+  try {
+    const setCookie = await getAdminCookie()
+
+    const userResponse = await fetch(
+      "http://localhost:3001/api/inft3050/User?limit=1000",
+      {
+        headers: {
+          Cookie: setCookie
+        }
+      }
+    )
+
+    const userData = await userResponse.json()
+
+    if (!userResponse.ok) {
+      return res.status(userResponse.status).json(userData)
+    }
+
+    const foundUser = userData.list.find(
+      (user) => String(user.UserName) === String(req.params.username)
+    )
+
+    if (!foundUser) {
+      return res.status(404).send("User not found")
+    }
+
+    res.json(foundUser)
+  } catch (error) {
+    console.error(error)
+    res.status(500).send("Load profile user failed")
+  }
+})
+
 const PORT = 5050
 
 app.listen(PORT, () => {

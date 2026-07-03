@@ -63,6 +63,21 @@ export default defineConfig({
         }
       },
 
+      "/api-create-customer": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
+      "/api-update-customer": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
+      "/api-profile-user": {
+        target: "http://localhost:5050",
+        changeOrigin: true
+      },
+
       "/api": {
         target: "http://localhost:3001",
         changeOrigin: true,
