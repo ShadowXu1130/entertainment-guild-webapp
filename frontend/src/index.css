@@ -3460,3 +3460,11 @@ body {
 .admin-header h1{
     color: #000 !important;
 }
+
+
+/* Customer Profile */
+.profile-hero h1,
+.profile-card h2,
+.profile-table th {
+    color: #000 !important;
+}
