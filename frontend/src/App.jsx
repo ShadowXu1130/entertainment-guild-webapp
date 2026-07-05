@@ -11,6 +11,7 @@ import Games from "./pages/Games"
 import Profile from "./pages/Profile"
 import Register from "./pages/Register"
 import Admin from "./pages/Admin"
+import Employee from "./pages/Employee"
 
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/employee" element={<Employee />} />
       </Routes>
     </BrowserRouter>
   )
