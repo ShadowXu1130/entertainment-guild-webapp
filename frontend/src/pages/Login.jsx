@@ -1,65 +1,96 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 function Login() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
-  const [userType, setUserType] = useState("customer");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [userType, setUserType] = useState("customer")
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [message, setMessage] = useState("")
+
+  const cleanName = (name) => {
+    return String(name || "")
+      .replace(/\s+employee$/i, "")
+      .replace(/\s+admin$/i, "")
+  }
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setMessage("");
+    e.preventDefault()
+    setMessage("")
 
     try {
       const response = await fetch("/api-login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           username,
-          password,
-        }),
-      });
+          password
+        })
+      })
 
       if (!response.ok) {
-        const errorText = await response.text();
-        setMessage(errorText || "Invalid username or password");
-        return;
+        setMessage("Invalid username or password")
+        return
       }
 
-      const user = await response.json();
+      const loginUser = await response.json()
 
-      const selectedIsAdmin = userType === "admin";
+      const profileResponse = await fetch(
+        `/api-profile-user/${loginUser.username}`
+      )
 
-      if (user.isAdmin !== selectedIsAdmin) {
-        setMessage(
-          `This account is ${user.isAdmin ? "Admin" : "Customer"}, not ${userType}`
-        );
-        return;
+      if (!profileResponse.ok) {
+        setMessage("Login succeeded, but profile loading failed.")
+        return
       }
 
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userID", user.id);
-      localStorage.setItem("username", user.username);
-      localStorage.setItem("userType", userType);
-      localStorage.setItem("isAdmin", user.isAdmin);
+      const profileUser = await profileResponse.json()
 
-      setMessage(`Welcome ${user.username}`);
+      const isAdmin = loginUser.isAdmin === true
+      const isEmployee =
+        !isAdmin &&
+        String(profileUser.Name || "")
+          .toLowerCase()
+          .endsWith(" employee")
 
-      if (user.isAdmin) {
-        navigate("/admin");
+      if (userType === "admin" && !isAdmin) {
+        setMessage("This account is not an Admin account.")
+        return
+      }
+
+      if (userType === "employee" && !isEmployee) {
+        setMessage("This account is not an Employee account.")
+        return
+      }
+
+      if (userType === "customer" && (isAdmin || isEmployee)) {
+        setMessage("This account is not a Customer account.")
+        return
+      }
+
+      localStorage.setItem("isLoggedIn", "true")
+      localStorage.setItem("userID", loginUser.id)
+      localStorage.setItem("username", loginUser.username)
+      localStorage.setItem("name", cleanName(profileUser.Name))
+      localStorage.setItem("email", profileUser.Email || "")
+      localStorage.setItem("userType", userType)
+      localStorage.setItem("isAdmin", isAdmin)
+
+      if (userType === "admin") {
+        navigate("/admin")
+      } else if (userType === "employee") {
+        navigate("/employee")
       } else {
-        navigate("/");
+        navigate("/")
       }
     } catch (error) {
-      console.error(error);
-      setMessage("Connection failed. Check browser console.");
+      console.error(error)
+      setMessage("Connection failed. Check browser console.")
     }
-  };
+  }
 
   return (
     <div className="login-page">
@@ -67,14 +98,16 @@ function Login() {
         <span>👤</span>
       </div>
 
-      <h1 className="login-title">Sign in</h1>
+      <h1 className="login-title">Sign In</h1>
 
       <p className="login-subtitle">
         Choose your account type and enter your credentials
       </p>
 
       <form className="login-card" onSubmit={handleLogin}>
-        <label className="login-section-label">ACCOUNT TYPE</label>
+        <label className="login-section-label">
+          ACCOUNT TYPE
+        </label>
 
         <div className="login-switch">
           <button
@@ -83,6 +116,14 @@ function Login() {
             onClick={() => setUserType("customer")}
           >
             Customer
+          </button>
+
+          <button
+            type="button"
+            className={userType === "employee" ? "active" : ""}
+            onClick={() => setUserType("employee")}
+          >
+            Employee
           </button>
 
           <button
@@ -120,18 +161,24 @@ function Login() {
           Sign In
         </button>
 
-        <button
-          type="button"
-          className="login-register-btn"
-          onClick={() => navigate("/register")}
-        >
-          Create Account
-        </button>
+        {userType === "customer" && (
+          <button
+            type="button"
+            className="login-submit secondary-login-btn"
+            onClick={() => navigate("/register")}
+          >
+            Create Customer Account
+          </button>
+        )}
 
-        {message && <p className="login-message">{message}</p>}
+        {message && (
+          <p className="login-message">
+            {message}
+          </p>
+        )}
       </form>
     </div>
-  );
+  )
 }
 
-export default Login;
+export default Login

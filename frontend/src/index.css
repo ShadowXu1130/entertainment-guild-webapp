@@ -2763,3 +2763,708 @@ body {
   background: #dc2626;
   transform: translateY(-2px);
 }
+
+/* employee profile */
+.employee-table {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.employee-table-header,
+.employee-table-row {
+  display: grid;
+  grid-template-columns: 70px 2fr 1fr 1fr 1fr 1fr 1fr;
+  padding: 14px;
+  border-bottom: 1px solid #eee;
+  gap: 12px;
+}
+
+.employee-table-header {
+  font-weight: 700;
+  background: #f5f5f7;
+}
+
+/* Admin Register */
+.admin-product-form,
+.admin-product-form label,
+.admin-product-form h2,
+.admin-product-form h3,
+.admin-product-form p,
+.admin-product-form span {
+    color: #000 !important;
+}
+
+.admin-product-form input,
+.admin-product-form select,
+.admin-product-form textarea {
+    color: #000 !important;
+    background: #ffffff;
+    border: 1px solid #d9d9d9;
+}
+
+.admin-product-form input:focus,
+.admin-product-form select:focus,
+.admin-product-form textarea:focus {
+    color: #000 !important;
+    background: #ffffff;
+}
+
+.admin-product-form input::placeholder,
+.admin-product-form textarea::placeholder {
+    color: #666 !important;
+}
+
+.admin-product-form option {
+    color: #000;
+    background: #fff;
+}
+
+/* Typed text */
+.admin-product-form input,
+.admin-product-form input[type="text"],
+.admin-product-form input[type="password"],
+.admin-product-form input[type="number"],
+.admin-product-form input[type="date"],
+.admin-product-form select,
+.admin-product-form textarea {
+    -webkit-text-fill-color: #000;
+}
+
+/* Register success/error message */
+.login-message {
+    color: #000 !important;
+}
+
+
+/* User Management heading */
+.admin-table-card h2 {
+    color: #000 !important;
+}
+
+.admin-header h2 {
+    color: #000 !important;
+}
+
+.admin-search {
+    color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+    caret-color: #000;
+}
+
+.admin-search::placeholder {
+    color: #666 !important;
+}
+
+.admin-register-box {
+  border: 1px solid #d9d9e3;
+  border-radius: 22px;
+  padding: 28px;
+  margin: 20px 0 36px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.04);
+}
+
+.admin-register-box h2 {
+  color: #000 !important;
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.admin-register-form {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+  align-items: end;
+}
+
+.admin-register-field {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.admin-register-field label {
+  color: #000 !important;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.admin-register-field input,
+.admin-register-field select {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  height: 48px;
+  border: 1px solid #d4d4dd;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-size: 15px;
+  background: #fff;
+}
+
+.admin-register-field input::placeholder {
+  color: #666 !important;
+}
+
+.admin-register-submit {
+  grid-column: 1 / -1;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #5146e8;
+  color: white;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.admin-register-message {
+  color: #000 !important;
+  margin-top: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Fix Admin page overflow after register box */
+.admin-page,
+.admin-main,
+.admin-table-card {
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.admin-main {
+  min-width: 0;
+}
+
+.admin-header {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.admin-user {
+  flex-shrink: 0;
+}
+
+/* Keep User Management table inside screen */
+.admin-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.admin-table th,
+.admin-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-table th:last-child,
+.admin-table td:last-child {
+  width: 210px;
+}
+
+/* Keep Edit/Delete buttons together */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+/* Register box responsive layout */
+.admin-register-form {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .admin-register-form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .admin-register-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-page {
+    overflow-x: auto;
+  }
+}
+
+/* =====================================================
+   Employee Dashboard
+===================================================== */
+
+.employee-page {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px 40px 60px;
+    box-sizing: border-box;
+}
+
+.employee-hero {
+    width: 100%;
+    margin: 0 auto 30px;
+}
+
+.employee-title {
+    color: #000;
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+/* ---------------- Profile ---------------- */
+
+.employee-profile {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 35px;
+    box-shadow: 0 8px 25px rgba(0,0,0,.05);
+}
+
+.employee-profile h2 {
+    color: #000;
+    margin-bottom: 20px;
+}
+
+.employee-profile p {
+    color: #000;
+    margin: 12px 0;
+    font-size: 17px;
+}
+
+.employee-profile strong {
+    display: inline-block;
+    width: 130px;
+}
+
+/* ---------------- Section ---------------- */
+
+.employee-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 35px;
+    box-shadow: 0 8px 25px rgba(0,0,0,.05);
+}
+
+.employee-section h2 {
+    color: #000;
+    margin-bottom: 25px;
+}
+
+/* ---------------- Cards ---------------- */
+
+.employee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 14px 20px;
+
+    margin-bottom: 12px;
+
+    border-radius: 12px;
+    background: #f7f7f7;
+
+    color: #000;
+}
+
+.employee-row span {
+    flex: 1;
+    color: #000;
+}
+
+/* ---------------- Product Table ---------------- */
+
+.employee-table {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.employee-table-header {
+    display: grid;
+    grid-template-columns:
+        80px
+        2fr
+        1fr
+        1fr
+        1.3fr
+        120px
+        120px;
+
+    background: #5146e8;
+    color: white;
+    font-weight: 700;
+    padding: 16px;
+}
+
+.employee-table-row {
+    display: grid;
+    grid-template-columns:
+        80px
+        2fr
+        1fr
+        1fr
+        1.3fr
+        120px
+        120px;
+
+    padding: 16px;
+
+    border-top: 1px solid #eee;
+
+    color: #000;
+}
+
+.employee-table-row:nth-child(even) {
+    background: #fafafa;
+}
+
+.employee-table-header span,
+.employee-table-row span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width:1200px){
+
+.employee-table{
+    overflow-x:auto;
+}
+
+.employee-table-header,
+.employee-table-row{
+    min-width:1100px;
+}
+
+.employee-row{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+}
+
+}
+
+/* Employee page visual fix */
+.employee-page {
+  min-height: 100vh;
+  padding: 50px;
+  background: #f5f5f7;
+  color: #000;
+}
+
+.employee-profile-card,
+.employee-section {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 24px;
+  padding: 28px;
+  margin-bottom: 28px;
+  color: #000;
+  box-shadow: 0 10px 30px rgba(0,0,0,.05);
+}
+
+.employee-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  text-align: left;
+}
+
+.employee-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+  background: #5146e8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.employee-hero h1,
+.employee-profile-card h2,
+.employee-section h2 {
+  color: #000 !important;
+  margin: 0 0 12px;
+}
+
+.employee-hero p,
+.employee-hero span,
+.employee-profile-card span,
+.employee-profile-card strong {
+  color: #000 !important;
+}
+
+.employee-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.employee-profile-grid div {
+  background: #f5f5f7;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.employee-profile-grid span {
+  display: block;
+  margin-bottom: 8px;
+  color: #666 !important;
+}
+
+.employee-search {
+  width: 100%;
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 28px;
+  font-size: 16px;
+}
+
+.employee-search::placeholder {
+  color: #666 !important;
+}
+
+.employee-logout-btn {
+  margin-left: auto;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.employee-control-bar {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 22px;
+  padding: 22px;
+  margin-bottom: 28px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.employee-switch-bar {
+  display: flex;
+  background: #eeeef4;
+  border-radius: 16px;
+  padding: 6px;
+  flex: 1;
+}
+
+.employee-switch-bar button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 13px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+}
+
+.employee-switch-bar button.active {
+  background: #5146e8;
+  color: white;
+}
+
+.employee-search {
+  width: 320px;
+  margin: 0;
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+}
+
+.employee-section {
+  margin-top: 0;
+}
+
+.employee-page-title{
+    text-align:center;
+
+    font-size:72px;
+    font-weight:800;
+
+    margin:0px 0 70px;
+    color:#000;
+}
+
+.employee-hero{
+    display:flex;
+    align-items:center;
+
+    padding:36px 42px;
+
+    background:#fff;
+
+    border-radius:32px;
+
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.employee-user-info{
+    margin-left:24px;
+}
+
+.employee-user-info p{
+    margin:0;
+    font-size:24px;
+}
+
+.employee-user-info span{
+    display:block;
+    margin-top:6px;
+    color:#666;
+}
+
+.employee-logout-btn{
+    margin-left:auto;
+}
+
+.employee-profile-title-row{
+    position: relative;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    margin-bottom: 30px;
+}
+
+.employee-profile-title-row h2{
+    margin: 0;
+
+    font-size: 40px;
+    font-weight: 700;
+
+    text-align: center;
+}
+
+.employee-edit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.employee-edit-profile-form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.employee-edit-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.employee-edit-field input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 0 14px;
+  color: #000;
+  background: #fff;
+}
+
+.employee-edit-actions {
+  grid-column: 1 / -1;
+}
+
+.employee-edit-profile-btn{
+    position: absolute;
+
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+
+    background: #5146e8;
+    color: white;
+
+    border: none;
+    border-radius: 12px;
+
+    padding: 12px 22px;
+
+    font-weight: 700;
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.employee-edit-profile-btn:hover{
+    background:#4338ca;
+}
+
+.employee-save-profile-btn {
+  background: #5146e8;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 22px;
+  font-weight: 700;
+}
+
+.employee-cancel-profile-btn {
+  background: #eeeef4;
+  color: #333;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 22px;
+  font-weight: 700;
+}
+
+.employee-profile-message {
+  margin-top: 16px;
+  font-weight: 700;
+  color: #000;
+}
+
+.employee-table-header.simple,
+.employee-table-row.simple{
+    display:grid;
+    grid-template-columns:
+        120px      /* User ID */
+        220px      /* Username */
+        300px      /* Name */
+        minmax(420px,1fr); /* Email */
+
+    align-items:center;
+}
+.admin-header h1{
+    color: #000 !important;
+}
+
+
+/* Customer Profile */
+.profile-hero h1,
+.profile-card h2,
+.profile-table th {
+    color: #000 !important;
+}

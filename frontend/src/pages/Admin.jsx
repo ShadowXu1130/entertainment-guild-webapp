@@ -47,6 +47,16 @@ const [newStock, setNewStock] = useState({
   Price: ""
 })
 
+const [newStaff, setNewStaff] = useState({
+  role: "employee",
+  name: "",
+  username: "",
+  email: "",
+  password: ""
+})
+
+const [staffMessage, setStaffMessage] = useState("")
+
   const safeText = (value) => {
     if (value === null || value === undefined || value === "") return "N/A"
 
@@ -55,6 +65,22 @@ const [newStock, setNewStock] = useState({
     }
 
     return String(value)
+  }
+
+  const getDisplayName = (name) => {
+    return safeText(name)
+      .replace(/\s+employee$/i, "")
+      .replace(/\s+admin$/i, "")
+  }
+
+  const getUserRole = (user) => {
+    if (user.IsAdmin) return "Admin"
+
+    if (safeText(user.Name).toLowerCase().endsWith(" employee")) {
+      return "Employee"
+    }
+
+    return "Customer"
   }
 
   useEffect(() => {
@@ -179,7 +205,7 @@ const paginatedProducts = sortedProducts.slice(
 )
 
   const filteredUsers = users.filter((user) =>
-    matchesSearch([user.UserID, user.UserName, user.Name, user.Email])
+    matchesSearch([user.UserID, user.UserName, getDisplayName(user.Name), user.Email, getUserRole(user)])
   )
 
   const sortedUsers = filteredUsers
@@ -358,18 +384,129 @@ const handleUpdateProduct = async () => {
   }
 }
 
+const handleCreateStaffAccount = async (e) => {
+  e.preventDefault()
+  setStaffMessage("")
+
+  const cleanName = newStaff.name.trim()
+  const cleanUsername = newStaff.username.trim()
+  const cleanPassword = newStaff.password
+  const cleanEmail = (newStaff.email || "").trim()
+
+  if (!cleanName || !cleanUsername || !cleanPassword) {
+    setStaffMessage("Please complete all staff account fields")
+    return
+  }
+
+  const duplicateUser = users.find(
+    (user) => safeText(user.UserName).toLowerCase() === cleanUsername.toLowerCase()
+  )
+
+  if (duplicateUser) {
+    setStaffMessage("Username already exists")
+    return
+  }
+
+  const roleTag = newStaff.role === "admin" ? "admin" : "employee"
+  const storedName = `${cleanName} ${roleTag}`
+
+  try {
+    const response = await fetch("/api-register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username: cleanUsername,
+        name: storedName,
+        email: newStaff.email || null,
+        password: cleanPassword
+      })
+    })
+
+    const text = await response.text()
+
+    if (!response.ok) {
+      setStaffMessage(text || "Failed to create staff account")
+      return
+    }
+
+    if (newStaff.role === "admin") {
+      const usersResponse = await fetch("/api/inft3050/User?limit=1000")
+      const usersData = await usersResponse.json()
+
+      const createdUser = usersData.list?.find(
+        (user) => safeText(user.UserName).toLowerCase() === cleanUsername.toLowerCase()
+      )
+
+      if (createdUser) {
+        const updateResponse = await fetch(`/api-edit-user/${createdUser.UserID}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            IsAdmin: 1
+          })
+        })
+
+        if (!updateResponse.ok) {
+          setStaffMessage("Account created, but failed to set admin role")
+          loadAdminData()
+          return
+        }
+      }
+    }
+
+    setNewStaff({
+      role: "employee",
+      name: "",
+      username: "",
+      email: "",
+      password: ""
+    })
+
+    setStaffMessage(
+      newStaff.role === "admin"
+        ? "New admin account created successfully"
+        : "New employee account created successfully"
+    )
+
+    loadAdminData()
+  } catch (error) {
+    console.error(error)
+    setStaffMessage("Create account failed")
+  }
+}
+
 const handleEditUser = (user) => {
+  const role = getUserRole(user)
+  const cleanName = getDisplayName(user.Name)
+
   setEditingUser({
     UserID: user.UserID,
     UserName: user.UserName,
-    Name: user.Name,
-    IsAdmin: user.IsAdmin ? 1 : 0
+    Name: cleanName,
+    Role: role
   })
 
   setShowUserModal(true)
 }
 
 const handleUpdateUser = async () => {
+  const cleanName = getDisplayName(editingUser.Name).trim()
+  let storedName = cleanName
+  let isAdmin = 0
+
+  if (editingUser.Role === "Employee") {
+    storedName = `${cleanName} employee`
+  }
+
+  if (editingUser.Role === "Admin") {
+    storedName = `${cleanName} admin`
+    isAdmin = 1
+  }
+
   try {
     const response = await fetch(
       `/api-edit-user/${editingUser.UserID}`,
@@ -379,7 +516,8 @@ const handleUpdateUser = async () => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          IsAdmin: Number(editingUser.IsAdmin)
+          Name: storedName,
+          IsAdmin: isAdmin
         })
       }
     )
@@ -651,12 +789,14 @@ const changeTab = (tab) => {
     <div className="admin-page">
       <aside className="admin-sidebar">
         <div className="admin-brand">
-          <div className="admin-logo">EG</div>
-          <div>
+          <div className="admin-header">
+            <div className="admin-logo">EG</div>
+            <div className="admin-header-text">
             <h2>Entertainment Guild</h2>
             <p>Admin Panel</p>
           </div>
         </div>
+    </div>
 
         <nav className="admin-nav">
           <button className={activeTab === "users" ? "active" : ""} onClick={() => changeTab("users")}>Users</button>
@@ -733,6 +873,105 @@ const changeTab = (tab) => {
 
           {activeTab === "users" && (
             <div>
+              <div className="admin-register-box">
+                <h2>Register New Staff</h2>
+
+                <form
+                  className="admin-register-form"
+                  onSubmit={handleCreateStaffAccount}
+                >
+                  <div className="admin-register-field">
+                    <label>Name</label>
+                    <input
+                      type="text"
+                      placeholder="Enter full name"
+                      value={newStaff.name}
+                      onChange={(e) =>
+                        setNewStaff({
+                          ...newStaff,
+                          name: e.target.value
+                        })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="admin-register-field">
+                    <label>Username</label>
+                    <input
+                      type="text"
+                      placeholder="Enter username"
+                      value={newStaff.username}
+                      onChange={(e) =>
+                        setNewStaff({
+                          ...newStaff,
+                          username: e.target.value
+                        })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="admin-register-field">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      placeholder="Enter email"
+                      value={newStaff.email}
+                      onChange={(e) =>
+                        setNewStaff({
+                          ...newStaff,
+                          email: e.target.value
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="admin-register-field">
+                    <label>Password</label>
+                    <input
+                      type="password"
+                      placeholder="Enter password"
+                      value={newStaff.password}
+                      onChange={(e) =>
+                        setNewStaff({
+                          ...newStaff,
+                          password: e.target.value
+                        })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="admin-register-field">
+                    <label>Role</label>
+                    <select
+                      value={newStaff.role}
+                      onChange={(e) =>
+                        setNewStaff({
+                          ...newStaff,
+                          role: e.target.value
+                        })
+                      }
+                      required
+                    >
+                      <option value="employee">Employee</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+
+                  <button type="submit" className="admin-register-submit">
+                    Create {newStaff.role === "admin" ? "Admin" : "Employee"}
+                  </button>
+                </form>
+
+                {staffMessage && (
+                  <p className="admin-register-message">
+                    {staffMessage}
+                  </p>
+                )}
+              </div>
+
               <h2>User Management</h2>
 
               <table className="admin-table">
@@ -750,32 +989,40 @@ const changeTab = (tab) => {
                   {paginatedUsers.map((user) => (
                     <tr key={user.UserID}>
                       <td>{safeText(user.UserName)}</td>
-                      <td>{safeText(user.Name)}</td>
+                      <td>{getDisplayName(user.Name)}</td>
                       <td>
-                        <span className={user.IsAdmin ? "badge admin" : "badge"}>
-                          {user.IsAdmin ? "Admin" : "Customer"}
+                        <span
+                          className={
+                            getUserRole(user) === "Admin"
+                              ? "badge admin"
+                              : getUserRole(user) === "Employee"
+                                ? "badge employee"
+                                : "badge"
+                          }
+                        >
+                          {getUserRole(user)}
                         </span>
                       </td>
                       <td>#{safeText(user.UserID)}</td>
 
-                    <td>
-                    <div className="action-buttons">
-                        <button
-                        className="admin-edit-btn"
-                        onClick={() => handleEditUser(user)}
-                        >
-                        Edit
-                        </button>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            className="admin-edit-btn"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            Edit
+                          </button>
 
-                        <button
-                        className="admin-delete-btn"
-                        onClick={() => handleDeleteUser(user.UserID)}
-                        disabled={String(user.UserName) === String(username)}
-                        >
-                        Delete
-                        </button>
-                    </div>
-                    </td>
+                          <button
+                            className="admin-delete-btn"
+                            onClick={() => handleDeleteUser(user.UserID)}
+                            disabled={String(user.UserName) === String(username)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -783,25 +1030,25 @@ const changeTab = (tab) => {
 
               <div className="pagination">
                 <button
-                    onClick={() => setUserPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={userPage === 1}
+                  onClick={() => setUserPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={userPage === 1}
                 >
-                    Previous
+                  Previous
                 </button>
 
                 <span>
-                    Page {userPage} of {totalUserPages}
+                  Page {userPage} of {totalUserPages}
                 </span>
 
                 <button
-                    onClick={() =>
+                  onClick={() =>
                     setUserPage((prev) => Math.min(prev + 1, totalUserPages))
-                    }
-                    disabled={userPage === totalUserPages}
+                  }
+                  disabled={userPage === totalUserPages}
                 >
-                    Next
+                  Next
                 </button>
-                </div>
+              </div>
             </div>
           )}
 
@@ -1391,21 +1638,27 @@ const changeTab = (tab) => {
                     <label>Full Name</label>
                     <input
                     value={editingUser.Name}
-                    disabled
+                    onChange={(e) =>
+                        setEditingUser({
+                        ...editingUser,
+                        Name: e.target.value
+                        })
+                    }
                     />
 
                     <label>Role</label>
                     <select
-                    value={editingUser.IsAdmin}
+                    value={editingUser.Role}
                     onChange={(e) =>
                         setEditingUser({
                         ...editingUser,
-                        IsAdmin: Number(e.target.value)
+                        Role: e.target.value
                         })
                     }
                     >
-                    <option value={0}>Customer</option>
-                    <option value={1}>Admin</option>
+                    <option value="Customer">Customer</option>
+                    <option value="Employee">Employee</option>
+                    <option value="Admin">Admin</option>
                     </select>
 
                     <div className="modal-actions">

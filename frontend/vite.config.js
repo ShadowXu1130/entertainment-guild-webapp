@@ -55,14 +55,6 @@ export default defineConfig({
         }
       },
 
-      "/login": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-        headers: {
-          origin: ""
-        }
-      },
-
       "/api-create-customer": {
         target: "http://localhost:5050",
         changeOrigin: true
