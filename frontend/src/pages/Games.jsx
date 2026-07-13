@@ -7,19 +7,21 @@ function Games() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:3001/api/inft3050/Product?limit=300").then((res) =>
-        res.json()
-      ),
-      fetch("http://localhost:3001/api/inft3050/Genre").then((res) =>
-        res.json()
-      ),
-      fetch("http://localhost:3001/api/inft3050/GameGenre").then((res) =>
-        res.json()
-      )
+      fetch(
+        "http://localhost:3001/api/inft3050/Product?limit=1000"
+      ).then((res) => res.json()),
+
+      fetch(
+        "http://localhost:3001/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000"
+      ).then((res) => res.json()),
+
+      fetch(
+        "http://localhost:3001/api/inft3050/GameGenre?limit=1000"
+      ).then((res) => res.json())
     ])
       .then(([productData, genreData, gameGenreData]) => {
-        const gamesGenre = genreData.list.find(
-          (genre) => genre.GenreID === 3
+        const gamesGenre = (genreData.list || []).find(
+          (genre) => Number(genre.GenreID) === 3
         )
 
         if (!gamesGenre) {
@@ -27,17 +29,20 @@ function Games() {
           return
         }
 
-        const gameIds = gamesGenre["Product List"].map((game) => game.ID)
+        const gameIds = (gamesGenre["Product List"] || []).map((game) =>
+          Number(game.ID)
+        )
 
-        const games = productData.list.filter((product) =>
-          gameIds.includes(product.ID)
+        const games = (productData.list || []).filter((product) =>
+          gameIds.includes(Number(product.ID))
         )
 
         const grouped = {}
 
-        gameGenreData.list.forEach((subGenre) => {
+        ;(gameGenreData.list || []).forEach((subGenre) => {
           const gamesInGenre = games.filter(
-            (game) => game.SubGenre === subGenre.SubGenreID
+            (game) =>
+              Number(game.SubGenre) === Number(subGenre.SubGenreID)
           )
 
           if (gamesInGenre.length > 0) {
@@ -45,18 +50,32 @@ function Games() {
           }
         })
 
+        console.log("All products:", productData.list?.length || 0)
+        console.log(
+          "Game Product List:",
+          gamesGenre["Product List"]?.length || 0
+        )
+        console.log("Filtered games:", games.length)
+
         setGroupedGames(grouped)
       })
       .catch((error) => {
-        console.log(error)
+        console.error("Failed to load games:", error)
+        setGroupedGames({})
       })
   }, [])
 
   const filterGames = (games) => {
     return games.filter((game) =>
-      game.Name.toLowerCase().includes(search.toLowerCase())
+      String(game.Name || "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
     )
   }
+
+  const hasVisibleGames = Object.keys(groupedGames).some(
+    (subGenreName) => filterGames(groupedGames[subGenreName]).length > 0
+  )
 
   return (
     <div className="apple-books-page">
@@ -86,26 +105,32 @@ function Games() {
             <h2>{subGenreName}</h2>
 
             <div className="book-horizontal-row">
-                {games.map((game) => (
-                    <Link
-                        key={game.ID}
-                        to={`/products/${game.ID}`}
-                        className="apple-book-card"
-                    >
-                        <img
-                        src={`/Pictures/${game.ID}.jpeg`}
-                        alt={game.Name}
-                        className="product-cover"
-                        />
+              {games.map((game) => (
+                <Link
+                  key={game.ID}
+                  to={`/products/${game.ID}`}
+                  className="apple-book-card"
+                >
+                  <img
+                    src={`/Pictures/${game.ID}.jpeg`}
+                    alt={game.Name || "Game cover"}
+                    className="product-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/Pictures/default.jpeg"
+                    }}
+                  />
 
-                        <h3>{game.Name}</h3>
-
-                    </Link>
-                ))}
+                  <h3>{game.Name}</h3>
+                </Link>
+              ))}
             </div>
           </section>
         )
       })}
+
+      {!hasVisibleGames && (
+        <p className="profile-empty">No games found.</p>
+      )}
     </div>
   )
 }

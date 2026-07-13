@@ -7,19 +7,21 @@ function Movies() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:3001/api/inft3050/Product?limit=300").then((res) =>
-        res.json()
-      ),
-      fetch("http://localhost:3001/api/inft3050/Genre").then((res) =>
-        res.json()
-      ),
-      fetch("http://localhost:3001/api/inft3050/MovieGenre").then((res) =>
-        res.json()
-      )
+      fetch(
+        "http://localhost:3001/api/inft3050/Product?limit=1000"
+      ).then((res) => res.json()),
+
+      fetch(
+        "http://localhost:3001/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000"
+      ).then((res) => res.json()),
+
+      fetch(
+        "http://localhost:3001/api/inft3050/MovieGenre?limit=1000"
+      ).then((res) => res.json())
     ])
       .then(([productData, genreData, movieGenreData]) => {
         const moviesGenre = genreData.list.find(
-          (genre) => genre.GenreID === 2
+          (genre) => Number(genre.GenreID) === 2
         )
 
         if (!moviesGenre) {
@@ -27,17 +29,20 @@ function Movies() {
           return
         }
 
-        const movieIds = moviesGenre["Product List"].map((movie) => movie.ID)
+        const movieIds = (moviesGenre["Product List"] || []).map(
+          (movie) => Number(movie.ID)
+        )
 
-        const movies = productData.list.filter((product) =>
-          movieIds.includes(product.ID)
+        const movies = (productData.list || []).filter((product) =>
+          movieIds.includes(Number(product.ID))
         )
 
         const grouped = {}
 
-        movieGenreData.list.forEach((subGenre) => {
+        ;(movieGenreData.list || []).forEach((subGenre) => {
           const moviesInGenre = movies.filter(
-            (movie) => movie.SubGenre === subGenre.SubGenreID
+            (movie) =>
+              Number(movie.SubGenre) === Number(subGenre.SubGenreID)
           )
 
           if (moviesInGenre.length > 0) {
@@ -48,13 +53,15 @@ function Movies() {
         setGroupedMovies(grouped)
       })
       .catch((error) => {
-        console.log(error)
+        console.error("Failed to load movies:", error)
       })
   }, [])
 
   const filterMovies = (movies) => {
     return movies.filter((movie) =>
-      movie.Name.toLowerCase().includes(search.toLowerCase())
+      String(movie.Name || "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
     )
   }
 

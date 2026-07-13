@@ -7,19 +7,21 @@ function Products() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:3001/api/inft3050/Product?limit=300").then((res) =>
-        res.json()
-      ),
-      fetch("http://localhost:3001/api/inft3050/Genre").then((res) =>
-        res.json()
-      ),
-      fetch("http://localhost:3001/api/inft3050/BookGenre").then((res) =>
-        res.json()
-      )
+      fetch(
+        "http://localhost:3001/api/inft3050/Product?limit=1000"
+      ).then((res) => res.json()),
+
+      fetch(
+        "http://localhost:3001/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000"
+      ).then((res) => res.json()),
+
+      fetch(
+        "http://localhost:3001/api/inft3050/BookGenre?limit=1000"
+      ).then((res) => res.json())
     ])
       .then(([productData, genreData, bookGenreData]) => {
-        const booksGenre = genreData.list.find(
-          (genre) => genre.GenreID === 1
+        const booksGenre = (genreData.list || []).find(
+          (genre) => Number(genre.GenreID) === 1
         )
 
         if (!booksGenre) {
@@ -27,17 +29,20 @@ function Products() {
           return
         }
 
-        const bookIds = booksGenre["Product List"].map((book) => book.ID)
+        const bookIds = (booksGenre["Product List"] || []).map((book) =>
+          Number(book.ID)
+        )
 
-        const books = productData.list.filter((product) =>
-          bookIds.includes(product.ID)
+        const books = (productData.list || []).filter((product) =>
+          bookIds.includes(Number(product.ID))
         )
 
         const grouped = {}
 
-        bookGenreData.list.forEach((subGenre) => {
+        ;(bookGenreData.list || []).forEach((subGenre) => {
           const booksInGenre = books.filter(
-            (book) => book.SubGenre === subGenre.SubGenreID
+            (book) =>
+              Number(book.SubGenre) === Number(subGenre.SubGenreID)
           )
 
           if (booksInGenre.length > 0) {
@@ -45,18 +50,32 @@ function Products() {
           }
         })
 
+        console.log("All products:", productData.list?.length || 0)
+        console.log(
+          "Book Product List:",
+          booksGenre["Product List"]?.length || 0
+        )
+        console.log("Filtered books:", books.length)
+
         setGroupedBooks(grouped)
       })
       .catch((error) => {
-        console.log(error)
+        console.error("Failed to load books:", error)
+        setGroupedBooks({})
       })
   }, [])
 
   const filterBooks = (books) => {
     return books.filter((book) =>
-      book.Name.toLowerCase().includes(search.toLowerCase())
+      String(book.Name || "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
     )
   }
+
+  const hasVisibleBooks = Object.keys(groupedBooks).some(
+    (subGenreName) => filterBooks(groupedBooks[subGenreName]).length > 0
+  )
 
   return (
     <div className="apple-books-page">
@@ -94,8 +113,11 @@ function Products() {
                 >
                   <img
                     src={`/Pictures/${book.ID}.jpeg`}
-                    alt={book.Name}
+                    alt={book.Name || "Book cover"}
                     className="product-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/Pictures/default.jpeg"
+                    }}
                   />
 
                   <h3>{book.Name}</h3>
@@ -105,6 +127,10 @@ function Products() {
           </section>
         )
       })}
+
+      {!hasVisibleBooks && (
+        <p className="profile-empty">No books found.</p>
+      )}
     </div>
   )
 }
