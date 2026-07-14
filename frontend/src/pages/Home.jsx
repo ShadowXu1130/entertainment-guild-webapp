@@ -2,38 +2,54 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 
 function Home() {
-  // const [groupedItems, setGroupedItems] = useState({})
-  // const [search, setSearch] = useState("")
   const [books, setBooks] = useState([])
   const [movies, setMovies] = useState([])
   const [games, setGames] = useState([])
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/inft3050/Genre")
-      .then((response) => response.json())
+    fetch(
+      "http://localhost:3001/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000"
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load home page products")
+        }
+
+        return response.json()
+      })
       .then((data) => {
-        const booksGenre = data.list.find((genre) => genre.GenreID === 1)
-        const moviesGenre = data.list.find((genre) => genre.GenreID === 2)
-        const gamesGenre = data.list.find((genre) => genre.GenreID === 3)
+        const genreList = data.list || []
 
-        if (booksGenre) {
-          setBooks(booksGenre["Product List"])
-        }
+        const booksGenre = genreList.find(
+          (genre) => Number(genre.GenreID) === 1
+        )
 
-        if (moviesGenre) {
-          setMovies(moviesGenre["Product List"])
-        }
+        const moviesGenre = genreList.find(
+          (genre) => Number(genre.GenreID) === 2
+        )
 
-        if (gamesGenre) {
-          setGames(gamesGenre["Product List"])
-        }
+        const gamesGenre = genreList.find(
+          (genre) => Number(genre.GenreID) === 3
+        )
+
+        setBooks(booksGenre?.["Product List"] || [])
+        setMovies(moviesGenre?.["Product List"] || [])
+        setGames(gamesGenre?.["Product List"] || [])
       })
       .catch((error) => {
-        console.log(error)
+        console.error("Failed to load home page:", error)
+
+        setBooks([])
+        setMovies([])
+        setGames([])
       })
   }, [])
 
   const renderRow = (title, items) => {
+    if (items.length === 0) {
+      return null
+    }
+
     return (
       <section className="book-row-section" key={title}>
         <h2>{title}</h2>
@@ -47,17 +63,23 @@ function Home() {
             >
               <img
                 src={`/Pictures/${item.ID}.jpeg`}
-                alt={item.Name}
+                alt={item.Name || `${title} product`}
                 className="product-cover"
+                onError={(event) => {
+                  event.currentTarget.src = "/Pictures/default.jpeg"
+                }}
               />
 
-              <h3>{item.Name}</h3>
+              <h3>{item.Name || "Unnamed Product"}</h3>
             </Link>
           ))}
         </div>
       </section>
     )
   }
+
+  const hasProducts =
+    books.length > 0 || movies.length > 0 || games.length > 0
 
   return (
     <div className="apple-books-page">
@@ -70,8 +92,14 @@ function Home() {
       {renderRow("Movies", movies)}
       {renderRow("Games", games)}
       {renderRow("Books", books)}
+
+      {!hasProducts && (
+        <p className="profile-empty">No products found.</p>
+      )}
     </div>
   )
+}
+
   // const filterItems = (productList) => {
   //   return items.filter((productList) =>
   //     productList.Name.toLowerCase().includes(search.toLowerCase())
@@ -127,6 +155,6 @@ function Home() {
   //     })}
   //   </div>
   // )
-}
+
 
 export default Home
