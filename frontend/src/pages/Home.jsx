@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import ProductImage from "../components/ProductImage"
 
 function Home() {
   const [books, setBooks] = useState([])
@@ -61,13 +62,10 @@ function Home() {
               to={`/products/${item.ID}`}
               className="apple-book-card"
             >
-              <img
-                src={`/Pictures/${item.ID}.jpeg`}
-                alt={item.Name || `${title} product`}
+              <ProductImage
+                productID={item.ID}
+                alt={item.Name}
                 className="product-cover"
-                onError={(event) => {
-                  event.currentTarget.src = "/Pictures/default.jpeg"
-                }}
               />
 
               <h3>{item.Name || "Unnamed Product"}</h3>

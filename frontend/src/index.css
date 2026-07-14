@@ -3468,3 +3468,51 @@ body {
 .profile-table th {
     color: #000 !important;
 }
+
+.admin-product-image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-product-image-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+.admin-product-image-field input[type="file"] {
+  padding: 12px;
+  border: 1px solid #d8d8df;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.admin-product-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid #e1e1e8;
+  border-radius: 12px;
+  background: #fafafe;
+}
+
+.admin-product-image-preview img {
+  width: 90px;
+  height: 125px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.admin-product-image-preview button {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #fff0f0;
+  color: #d80000;
+  font-weight: 600;
+  cursor: pointer;
+}

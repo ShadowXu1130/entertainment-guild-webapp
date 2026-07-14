@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import ProductImage from "../components/ProductImage"
 
 function Movies() {
   const [groupedMovies, setGroupedMovies] = useState({})
@@ -99,8 +100,8 @@ function Movies() {
                   to={`/products/${movie.ID}`}
                   className="apple-book-card"
                 >
-                  <img
-                    src={`/Pictures/${movie.ID}.jpeg`}
+                  <ProductImage
+                    productID={movie.ID}
                     alt={movie.Name}
                     className="product-cover"
                   />

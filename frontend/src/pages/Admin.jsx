@@ -31,6 +31,7 @@ const [orderPage, setOrderPage] = useState(1)
 const ordersPerPage = 25
 
 
+
   const [newProduct, setNewProduct] = useState({
   Name: "",
   Author: "",
@@ -39,6 +40,9 @@ const ordersPerPage = 25
   SubGenre: "",
   Published: ""
 })
+
+const [newProductImage, setNewProductImage] = useState(null)
+const [newProductImagePreview, setNewProductImagePreview] = useState("")
 
 const [newStock, setNewStock] = useState({
   SourceId: "",
@@ -156,10 +160,12 @@ const [staffMessage, setStaffMessage] = useState("")
     if (!confirmDelete) return
 
     try {
-      const response = await fetch(`/api/inft3050/Product/${productID}`, {
-        method: "DELETE",
-        credentials: "include"
-      })
+      const response = await fetch(
+        `http://localhost:5050/api-delete-product/${productID}`,
+        {
+            method: "DELETE"
+        }
+        )
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -272,15 +278,56 @@ const paginatedOrders = sortedOrders.slice(
   orderPage * ordersPerPage
 )
 
+const handleProductImageChange = (event) => {
+  const file = event.target.files?.[0]
+
+  if (!file) {
+    setNewProductImage(null)
+    setNewProductImagePreview("")
+    return
+  }
+
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+  ]
+
+  if (!allowedTypes.includes(file.type)) {
+    alert("Please select a JPEG, PNG or WebP image")
+    event.target.value = ""
+    setNewProductImage(null)
+    setNewProductImagePreview("")
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Image must be smaller than 5MB")
+    event.target.value = ""
+    setNewProductImage(null)
+    setNewProductImagePreview("")
+    return
+  }
+
+  if (newProductImagePreview) {
+  URL.revokeObjectURL(newProductImagePreview)
+}
+
+setNewProductImage(file)
+setNewProductImagePreview(URL.createObjectURL(file))
+}
 
 const handleAddProduct = async (e) => {
   e.preventDefault()
 
   const duplicateProduct = products.find(
     (product) =>
-      safeText(product.Name).toLowerCase() === newProduct.Name.toLowerCase() &&
-      safeText(product.Author).toLowerCase() === newProduct.Author.toLowerCase() &&
-      getProductGenreName(product.ID, product.Genre) === newProduct.Genre &&
+      safeText(product.Name).toLowerCase() ===
+        newProduct.Name.trim().toLowerCase() &&
+      safeText(product.Author).toLowerCase() ===
+        newProduct.Author.trim().toLowerCase() &&
+      getProductGenreName(product.ID, product.Genre) ===
+        newProduct.Genre &&
       Number(product.SubGenre) === Number(newProduct.SubGenre)
   )
 
@@ -289,27 +336,39 @@ const handleAddProduct = async (e) => {
     return
   }
 
+  if (!newProductImage) {
+    alert("Please select a product image")
+    return
+  }
+
+  const formData = new FormData()
+
+  formData.append("Name", newProduct.Name.trim())
+  formData.append("Author", newProduct.Author.trim())
+  formData.append("Description", newProduct.Description.trim())
+  formData.append(
+    "Genre",
+    String(getGenreIDByName(newProduct.Genre))
+  )
+  formData.append("SubGenre", String(newProduct.SubGenre))
+  formData.append("Published", newProduct.Published)
+  formData.append("LastUpdatedBy", username)
+  formData.append(
+    "LastUpdated",
+    new Date().toISOString().split("T")[0]
+  )
+  formData.append("Image", newProductImage)
+
   try {
     const response = await fetch("/api-add-product", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        Name: newProduct.Name,
-        Author: newProduct.Author,
-        Description: newProduct.Description,
-        Genre: getGenreIDByName(newProduct.Genre),
-        SubGenre: Number(newProduct.SubGenre),
-        Published: newProduct.Published,
-        LastUpdatedBy: username,
-        LastUpdated: new Date().toISOString().split("T")[0]
-      })
+      body: formData
     })
 
+    const responseText = await response.text()
+
     if (!response.ok) {
-      const errorText = await response.text()
-      alert(errorText || "Failed to create product")
+      alert(responseText || "Failed to create product")
       return
     }
 
@@ -322,7 +381,23 @@ const handleAddProduct = async (e) => {
       Published: ""
     })
 
-    alert("Product created successfully")
+    setNewProductImage(null)
+
+    if (newProductImagePreview) {
+      URL.revokeObjectURL(newProductImagePreview)
+    }
+
+    setNewProductImagePreview("")
+
+    const imageInput = document.getElementById(
+      "new-product-image"
+    )
+
+    if (imageInput) {
+      imageInput.value = ""
+    }
+
+    alert("Product and image created successfully")
     loadAdminData()
   } catch (error) {
     console.error(error)
@@ -1148,6 +1223,51 @@ const changeTab = (tab) => {
                     }
                     required
                 />
+
+                <div className="admin-product-image-field">
+                <label htmlFor="new-product-image">
+                    Product Image
+                </label>
+
+                <input
+                    id="new-product-image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleProductImageChange}
+                    required
+                />
+                </div>
+
+                {newProductImagePreview && (
+                    <div className="admin-product-image-preview">
+                        <img
+                        src={newProductImagePreview}
+                        alt="New product preview"
+                        />
+
+                        <button
+                        type="button"
+                        onClick={() => {
+                            if (newProductImagePreview) {
+                            URL.revokeObjectURL(newProductImagePreview)
+                            }
+
+                            setNewProductImage(null)
+                            setNewProductImagePreview("")
+
+                            const imageInput = document.getElementById(
+                            "new-product-image"
+                            )
+
+                            if (imageInput) {
+                            imageInput.value = ""
+                            }
+                        }}
+                        >
+                        Remove Image
+                        </button>
+                    </div>
+                    )}
 
                 <textarea
                     placeholder="Description"

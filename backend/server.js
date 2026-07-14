@@ -4,8 +4,40 @@ const crypto = require("crypto")
 
 const app = express()
 
+const path = require("path")
+const fs = require("fs")
+const multer = require("multer")
+
 app.use(cors())
 app.use(express.json())
+
+const tempUploadDirectory = path.join(__dirname, "temp-uploads")
+
+if (!fs.existsSync(tempUploadDirectory)) {
+  fs.mkdirSync(tempUploadDirectory, { recursive: true })
+}
+
+const upload = multer({
+  dest: tempUploadDirectory,
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
+  fileFilter: (req, file, callback) => {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ]
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      return callback(
+        new Error("Only JPEG, PNG and WebP images are allowed")
+      )
+    }
+
+    callback(null, true)
+  }
+})
 
 app.get("/", (req, res) => {
   res.send("Entertainment Guild Backend Running")
@@ -99,58 +131,180 @@ app.post("/api-register", async (req, res) => {
   }
 })
 
-app.post("/api-add-product", async (req, res) => {
-  try {
-    const {
-      Name,
-      Author,
-      Description,
-      Genre,
-      SubGenre,
-      Published,
-      LastUpdatedBy,
-      LastUpdated
-    } = req.body
+app.post(
+  "/api-add-product",
+  upload.single("Image"),
+  async (req, res) => {
+    let temporaryImagePath = req.file?.path
 
-    if (!Name || !Author || !Description || !Genre || !SubGenre || !Published) {
-      return res.status(400).send("Missing required product fields")
-    }
+    try {
+      const {
+        Name,
+        Author,
+        Description,
+        Genre,
+        SubGenre,
+        Published,
+        LastUpdatedBy,
+        LastUpdated
+      } = req.body
 
-    const setCookie = await getAdminCookie()
+      if (
+        !Name ||
+        !Author ||
+        !Description ||
+        !Genre ||
+        !SubGenre ||
+        !Published
+      ) {
+        if (temporaryImagePath && fs.existsSync(temporaryImagePath)) {
+          fs.unlinkSync(temporaryImagePath)
+        }
 
-    const createResponse = await fetch(
-      "http://localhost:3001/api/inft3050/Product",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Cookie: setCookie
-        },
-        body: JSON.stringify({
-          Name,
-          Author,
-          Description,
-          Genre: Number(Genre),
-          SubGenre: Number(SubGenre),
-          Published,
-          LastUpdatedBy: LastUpdatedBy || "adminAccount",
-          LastUpdated: LastUpdated || new Date().toISOString().split("T")[0]
-        })
+        return res.status(400).send("Missing required product fields")
       }
-    )
 
-    const resultText = await createResponse.text()
+      if (!req.file) {
+        return res.status(400).send("Product image is required")
+      }
 
-    if (!createResponse.ok) {
-      return res.status(createResponse.status).send(resultText)
-    }
+      const setCookie = await getAdminCookie()
 
-    res.status(201).send(resultText)
-  } catch (error) {
-    console.error(error)
-    res.status(500).send("Add product failed")
+      const createResponse = await fetch(
+        "http://localhost:3001/api/inft3050/Product",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: setCookie
+          },
+          body: JSON.stringify({
+            Name,
+            Author,
+            Description,
+            Genre: Number(Genre),
+            SubGenre: Number(SubGenre),
+            Published,
+            LastUpdatedBy: LastUpdatedBy || "adminAccount",
+            LastUpdated:
+              LastUpdated ||
+              new Date().toISOString().split("T")[0]
+          })
+        }
+      )
+
+      const resultText = await createResponse.text()
+
+      if (!createResponse.ok) {
+        if (temporaryImagePath && fs.existsSync(temporaryImagePath)) {
+          fs.unlinkSync(temporaryImagePath)
+        }
+
+        return res.status(createResponse.status).send(resultText)
+      }
+
+      let createdProductID = null
+
+      try {
+        const createdProduct = JSON.parse(resultText)
+
+        createdProductID =
+          createdProduct.ID ||
+          createdProduct.id ||
+          createdProduct.ProductID ||
+          createdProduct.productID
+      } catch {
+        // 返回值不是 JSON 时，后面重新查询产品。
+      }
+
+      if (!createdProductID) {
+        const productsResponse = await fetch(
+          "http://localhost:3001/api/inft3050/Product?limit=1000",
+          {
+            headers: {
+              Cookie: setCookie
+            }
+          }
+        )
+
+        const productsData = await productsResponse.json()
+
+        const matchingProducts = (productsData.list || [])
+          .filter(
+            (product) =>
+              String(product.Name).toLowerCase() ===
+                String(Name).toLowerCase() &&
+              String(product.Author).toLowerCase() ===
+                String(Author).toLowerCase()
+          )
+          .sort((a, b) => Number(b.ID) - Number(a.ID))
+
+        createdProductID = matchingProducts[0]?.ID
+      }
+
+      if (!createdProductID) {
+        if (temporaryImagePath && fs.existsSync(temporaryImagePath)) {
+          fs.unlinkSync(temporaryImagePath)
+        }
+
+        return res
+          .status(500)
+          .send("Product created, but product ID could not be found")
+      }
+
+      const picturesDirectory = path.join(
+        __dirname,
+        "..",
+        "frontend",
+        "public",
+        "Pictures"
+      )
+
+      if (!fs.existsSync(picturesDirectory)) {
+        fs.mkdirSync(picturesDirectory, { recursive: true })
+      }
+
+      const extensionByMimeType = {
+  "image/jpeg": ".jpeg",
+  "image/png": ".png",
+  "image/webp": ".webp"
+}
+
+const imageExtension = extensionByMimeType[req.file.mimetype]
+
+if (!imageExtension) {
+  if (temporaryImagePath && fs.existsSync(temporaryImagePath)) {
+    fs.unlinkSync(temporaryImagePath)
   }
+
+  return res.status(400).send("Unsupported image format")
+}
+
+const finalImagePath = path.join(
+  picturesDirectory,
+  `${createdProductID}${imageExtension}`
+)
+
+fs.renameSync(temporaryImagePath, finalImagePath)
+temporaryImagePath = null
+
+return res.status(201).json({
+  message: "Product and image created successfully",
+  productID: createdProductID,
+  imagePath: `/Pictures/${createdProductID}${imageExtension}`
 })
+      
+    } catch (error) {
+      console.error(error)
+
+      if (temporaryImagePath && fs.existsSync(temporaryImagePath)) {
+        fs.unlinkSync(temporaryImagePath)
+      }
+
+      return res.status(500).send("Add product failed")
+    }
+  }
+)
 
 app.patch("/api-edit-product/:id", async (req, res) => {
   try {
@@ -178,6 +332,64 @@ app.patch("/api-edit-product/:id", async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).send("Edit product failed")
+  }
+})
+
+app.delete("/api-delete-product/:id", async (req, res) => {
+  try {
+    const productID = req.params.id
+    const setCookie = await getAdminCookie()
+
+    const deleteResponse = await fetch(
+      `http://localhost:3001/api/inft3050/Product/${productID}`,
+      {
+        method: "DELETE",
+        headers: {
+          Cookie: setCookie
+        }
+      }
+    )
+
+    const resultText = await deleteResponse.text()
+
+    if (!deleteResponse.ok) {
+      return res.status(deleteResponse.status).send(resultText)
+    }
+
+    const picturesDirectory = path.join(
+      __dirname,
+      "..",
+      "frontend",
+      "public",
+      "Pictures"
+    )
+
+    const possibleImageFiles = [
+      `${productID}.jpeg`,
+      `${productID}.jpg`,
+      `${productID}.png`,
+      `${productID}.webp`
+    ]
+
+    const deletedImages = []
+
+    for (const fileName of possibleImageFiles) {
+      const imagePath = path.join(picturesDirectory, fileName)
+
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath)
+        deletedImages.push(fileName)
+      }
+    }
+
+    return res.status(200).json({
+    message: "Product deleted successfully",
+    productID,
+    deletedImages
+  })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).send("Delete product failed")
   }
 })
 
@@ -476,3 +688,4 @@ const PORT = 5050
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
