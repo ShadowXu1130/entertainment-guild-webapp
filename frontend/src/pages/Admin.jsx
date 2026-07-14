@@ -312,21 +312,63 @@ const paginatedUsers = sortedUsers.slice(
     stockPage * stockPerPage
     )
 
-  const filteredOrders = orders.filter((order, index) =>
-    matchesSearch([
-      order.orderID,
-      order.OrderID,
-      index + 1,
-      order.customer,
-      order.Customer,
-      order.Suburb,
-      order.State
-    ])
+  const filteredOrders = orders.filter((order) => {
+  const orderID =
+    order.OrderID ||
+    order.orderID ||
+    order.OrderId
+
+  const customerID =
+    order.Customer ||
+    order.customer ||
+    order.CustomerID ||
+    order.CustomerId
+
+  const address =
+    order.StreetAddress ||
+    order.streetAddress ||
+    order.Address ||
+    order.address
+
+  const suburb =
+    order.Suburb ||
+    order.suburb
+
+  const state =
+    order.State ||
+    order.state
+
+  const postCode =
+    order.PostCode ||
+    order.Postcode ||
+    order.postCode ||
+    order.postcode
+
+  const itemCount =
+    order["ProductsInOrders List"]?.length || 0
+
+  return matchesSearch([
+    orderID,
+    `#${orderID}`,
+    customerID,
+    `#${customerID}`,
+    address,
+    suburb,
+    state,
+    postCode,
+    itemCount,
+    `${itemCount} items`
+  ])
+})
+
+const sortedOrders = filteredOrders
+  .slice()
+  .sort(
+    (a, b) =>
+      Number(a.OrderID || a.orderID || a.OrderId) -
+      Number(b.OrderID || b.orderID || b.OrderId)
   )
 
-  const sortedOrders = filteredOrders
-  .slice()
-  .sort((a, b) => Number(a.OrderID) - Number(b.OrderID))
 
 const totalOrderPages = Math.max(
   1,
