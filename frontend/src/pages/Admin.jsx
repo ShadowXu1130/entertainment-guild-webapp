@@ -134,17 +134,21 @@ const [staffMessage, setStaffMessage] = useState("")
         .then((res) => res.json())
         .then((data) => setGenres(data.list || []))
         .catch((err) => console.log(err))
-    fetch("/api/inft3050/GameGenre")
+
+    fetch("/api/inft3050/GameGenre?limit=1000")
     .then((res) => res.json())
     .then((data) => setGameGenres(data.list || []))
+    .catch((err) => console.error("Load GameGenre failed:", err))
 
-    fetch("/api/inft3050/MovieGenre")
+    fetch("/api/inft3050/MovieGenre?limit=1000")
     .then((res) => res.json())
     .then((data) => setMovieGenres(data.list || []))
+    .catch((err) => console.error("Load MovieGenre failed:", err))
 
-    fetch("/api/inft3050/BookGenre")
+    fetch("/api/inft3050/BookGenre?limit=1000")
     .then((res) => res.json())
     .then((data) => setBookGenres(data.list || []))
+    .catch((err) => console.error("Load BookGenre failed:", err))
   }
 
   const handleLogout = () => {
@@ -878,58 +882,102 @@ const getGenreIDByName = (genreName) => {
   return found ? found.GenreID : null
 }
 
-const getProductGenreName = (productID, productGenreID = null) => {
-  if (productGenreID) {
-    const found = genres.find(
-      (genre) => Number(genre.GenreID) === Number(productGenreID)
-    )
+const getProductGenreName = (
+  productID,
+  productGenreID = null
+) => {
+  if (
+    productGenreID !== null &&
+    productGenreID !== undefined &&
+    productGenreID !== ""
+  ) {
+    const directGenre = genres.find((genre) => {
+      const genreID =
+        genre.GenreID ||
+        genre.GenreId ||
+        genre.ID ||
+        genre.id
 
-    if (found) return found.Name
+      return Number(genreID) === Number(productGenreID)
+    })
+
+    if (directGenre) {
+      return safeText(
+        directGenre.Name ||
+        directGenre.GenreName
+      )
+    }
   }
 
   for (const genre of genres) {
-    const productList = genre["Product List"] || []
+    const productList =
+      genre["Product List"] ||
+      genre["Products List"] ||
+      genre.Products ||
+      []
 
-    const found = productList.find(
-      (product) => Number(product.ID) === Number(productID)
-    )
+    const matchedProduct = productList.find((product) => {
+      const listedProductID =
+        product.ID ||
+        product.ProductID ||
+        product.ProductId ||
+        product.id
 
-    if (found) {
-      return genre.Name
+      return Number(listedProductID) === Number(productID)
+    })
+
+    if (matchedProduct) {
+      return safeText(
+        genre.Name ||
+        genre.GenreName
+      )
     }
   }
 
   return "N/A"
 }
 
+
 const getSubGenreName = (product) => {
-  const subGenreId = Number(product.SubGenre)
+  const genreName = getProductGenreName(
+    product.ID,
+    product.Genre
+  )
 
-  if (getProductGenreName(product.ID) === "Games") {
-    return (
-      gameGenres.find(
-        (genre) => Number(genre.SubGenreID) === subGenreId
-      )?.Name || subGenreId
-    )
+  const subGenreID = Number(product.SubGenre)
+
+  if (!Number.isFinite(subGenreID)) {
+    return "N/A"
   }
 
-  if (getProductGenreName(product.ID) === "Movies") {
-    return (
-      movieGenres.find(
-        (genre) => Number(genre.SubGenreID) === subGenreId
-      )?.Name || subGenreId
-    )
+  let subGenreList = []
+
+  if (genreName === "Games") {
+    subGenreList = gameGenres
+  } else if (genreName === "Movies") {
+    subGenreList = movieGenres
+  } else if (genreName === "Books") {
+    subGenreList = bookGenres
+  } else {
+    return "N/A"
   }
 
-  if (getProductGenreName(product.ID) === "Books") {
-    return (
-      bookGenres.find(
-        (genre) => Number(genre.SubGenreID) === subGenreId
-      )?.Name || subGenreId
-    )
-  }
+  const found = subGenreList.find(
+    (genre) =>
+      Number(
+        genre.SubGenreID ||
+        genre.SubGenreId ||
+        genre.subGenreID
+      ) === subGenreID
+  )
 
-  return subGenreId
+  return found
+    ? safeText(
+        found.Name ||
+        found.GenreName ||
+        found.SubGenreName
+      )
+    : "N/A"
 }
 
 
