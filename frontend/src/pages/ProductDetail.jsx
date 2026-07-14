@@ -7,15 +7,20 @@ function ProductDetail() {
   const [product, setProduct] = useState(null)
   const [genreName, setGenreName] = useState("")
   const [subGenreName, setSubGenreName] = useState("")
-  const [sourceNames, setSourceNames] = useState([])
-  const [sourceLink, setSourceLink] = useState("")
-  const [price, setPrice] = useState(null)
-  const [quantityAvailable, setQuantityAvailable] = useState(null)
-  const [imageExtensionIndex, setImageExtensionIndex] = useState(0)
+  const [purchaseOptions, setPurchaseOptions] = useState([])
+
+  const [imageExtensionIndex, setImageExtensionIndex] =
+    useState(0)
+
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState("")
 
-  const imageExtensions = [".jpeg", ".jpg", ".png", ".webp"]
+  const imageExtensions = [
+    ".jpeg",
+    ".jpg",
+    ".png",
+    ".webp"
+  ]
 
   useEffect(() => {
     let isMounted = true
@@ -26,10 +31,7 @@ function ProductDetail() {
       setProduct(null)
       setGenreName("")
       setSubGenreName("")
-      setSourceNames([])
-      setSourceLink("")
-      setPrice(null)
-      setQuantityAvailable(null)
+      setPurchaseOptions([])
       setImageExtensionIndex(0)
 
       try {
@@ -41,7 +43,8 @@ function ProductDetail() {
           throw new Error("Failed to load product")
         }
 
-        const productData = await productResponse.json()
+        const productData =
+          await productResponse.json()
 
         if (!isMounted) return
 
@@ -68,7 +71,9 @@ function ProductDetail() {
         }
 
         if (!stocktakeResponse.ok) {
-          throw new Error("Failed to load stocktake")
+          throw new Error(
+            "Failed to load stocktake records"
+          )
         }
 
         if (!sourceResponse.ok) {
@@ -87,6 +92,10 @@ function ProductDetail() {
 
         if (!isMounted) return
 
+        // =========================================
+        // Genre
+        // =========================================
+
         let matchedGenre = null
 
         if (
@@ -94,25 +103,34 @@ function ProductDetail() {
           productData.Genre !== undefined &&
           productData.Genre !== ""
         ) {
-          matchedGenre = (genreData.list || []).find(
+          matchedGenre = (
+            genreData.list || []
+          ).find(
             (genre) =>
-              Number(genre.GenreID) === Number(productData.Genre)
+              Number(genre.GenreID) ===
+              Number(productData.Genre)
           )
         }
 
         if (!matchedGenre) {
-          matchedGenre = (genreData.list || []).find((genre) => {
-            const productList = genre["Product List"] || []
+          matchedGenre = (
+            genreData.list || []
+          ).find((genre) => {
+            const productList =
+              genre["Product List"] || []
 
             return productList.some(
               (item) =>
-                Number(item.ID) === Number(productData.ID)
+                Number(item.ID) ===
+                Number(productData.ID)
             )
           })
         }
 
         if (matchedGenre) {
-          setGenreName(matchedGenre.Name || "")
+          setGenreName(
+            matchedGenre.Name || ""
+          )
 
           const subGenreApiByGenreID = {
             1: "BookGenre",
@@ -132,9 +150,10 @@ function ProductDetail() {
             productData.SubGenre !== ""
           ) {
             try {
-              const subGenreResponse = await fetch(
-                `http://localhost:3001/api/inft3050/${subGenreApi}?limit=1000`
-              )
+              const subGenreResponse =
+                await fetch(
+                  `http://localhost:3001/api/inft3050/${subGenreApi}?limit=1000`
+                )
 
               if (subGenreResponse.ok) {
                 const subGenreData =
@@ -144,11 +163,18 @@ function ProductDetail() {
                   subGenreData.list || []
                 ).find(
                   (item) =>
-                    Number(item.SubGenreID) ===
-                    Number(productData.SubGenre)
+                    Number(
+                      item.SubGenreID
+                    ) ===
+                    Number(
+                      productData.SubGenre
+                    )
                 )
 
-                if (matchedSubGenre && isMounted) {
+                if (
+                  matchedSubGenre &&
+                  isMounted
+                ) {
                   setSubGenreName(
                     matchedSubGenre.Name || ""
                   )
@@ -163,12 +189,17 @@ function ProductDetail() {
           }
         }
 
+        // =========================================
+        // Purchase options
+        // Each Stocktake record = one purchase option
+        // =========================================
+
         const matchedStocks = (
           stocktakeData.list || []
         ).filter((stock) => {
           const stockProductID =
-            stock.ProductId ||
-            stock.ProductID ||
+            stock.ProductId ??
+            stock.ProductID ??
             stock.Productid
 
           return (
@@ -177,92 +208,81 @@ function ProductDetail() {
           )
         })
 
-        if (matchedStocks.length > 0) {
-          const totalQuantity = matchedStocks.reduce(
-            (total, stock) =>
-              total + Number(stock.Quantity || 0),
-            0
-          )
-
-          const availablePrices = matchedStocks
-            .map((stock) => Number(stock.Price))
-            .filter((stockPrice) =>
-              Number.isFinite(stockPrice)
-            )
-
-          const lowestPrice =
-            availablePrices.length > 0
-              ? Math.min(...availablePrices)
-              : null
-
-          setQuantityAvailable(totalQuantity)
-          setPrice(lowestPrice)
-
-          const sourceIDs = matchedStocks
-            .map(
-              (stock) =>
-                stock.SourceId ||
-                stock.SourceID ||
-                stock.Sourceid
-            )
-            .filter(
-              (sourceID) =>
-                sourceID !== null &&
-                sourceID !== undefined &&
-                sourceID !== ""
-            )
-
-          const matchedSources = (
-            sourceData.list || []
-          ).filter((source) => {
+        const options = matchedStocks.map(
+          (stock) => {
             const sourceID =
-              source.SourceId ||
-              source.SourceID ||
-              source.Sourceid
+              stock.SourceId ??
+              stock.SourceID ??
+              stock.Sourceid
 
-            return sourceIDs.some(
-              (matchedSourceID) =>
-                Number(sourceID) ===
-                Number(matchedSourceID)
-            )
-          })
+            const matchedSource = (
+              sourceData.list || []
+            ).find((source) => {
+              const currentSourceID =
+                source.SourceId ??
+                source.SourceID ??
+                source.Sourceid
 
-          const uniqueSourceNames = [
-            ...new Set(
-              matchedSources
-                .map(
-                  (source) =>
-                    source.SourceName ||
-                    source.Source_name ||
-                    source.Name
-                )
-                .filter(Boolean)
-            )
-          ]
+              return (
+                Number(currentSourceID) ===
+                Number(sourceID)
+              )
+            })
 
-          setSourceNames(uniqueSourceNames)
+            const sourceName =
+              matchedSource?.SourceName ||
+              matchedSource?.Source_name ||
+              matchedSource?.Name ||
+              `Source #${sourceID}`
 
-          const firstSourceWithLink =
-            matchedSources.find(
-              (source) =>
-                source.ExternalLink ||
-                source.External_Link ||
-                source.Link ||
-                source.URL
-            )
-
-          setSourceLink(
-            firstSourceWithLink?.ExternalLink ||
-              firstSourceWithLink?.External_Link ||
-              firstSourceWithLink?.Link ||
-              firstSourceWithLink?.URL ||
+            const sourceLink =
+              matchedSource?.ExternalLink ||
+              matchedSource?.External_Link ||
+              matchedSource?.Link ||
+              matchedSource?.URL ||
               ""
-          )
-        } else {
-          setQuantityAvailable(0)
-          setPrice(null)
-          setSourceNames([])
-          setSourceLink("")
+
+            return {
+              itemID:
+                stock.ItemId ??
+                stock.ItemID ??
+                stock.Itemid,
+
+              sourceID,
+
+              sourceName,
+
+              sourceLink,
+
+              price: Number(stock.Price || 0),
+
+              quantityAvailable: Number(
+                stock.Quantity || 0
+              )
+            }
+          }
+        )
+
+        options.sort((a, b) => {
+          if (
+            a.quantityAvailable > 0 &&
+            b.quantityAvailable <= 0
+          ) {
+            return -1
+          }
+
+          if (
+            a.quantityAvailable <= 0 &&
+            b.quantityAvailable > 0
+          ) {
+            return 1
+          }
+
+          return a.price - b.price
+        })
+
+        if (isMounted) {
+          setPurchaseOptions(options)
         }
       } catch (error) {
         console.error(error)
@@ -288,9 +308,13 @@ function ProductDetail() {
   }, [id])
 
   const handleImageError = (event) => {
-    const nextIndex = imageExtensionIndex + 1
+    const nextIndex =
+      imageExtensionIndex + 1
 
-    if (nextIndex < imageExtensions.length) {
+    if (
+      nextIndex <
+      imageExtensions.length
+    ) {
       setImageExtensionIndex(nextIndex)
       return
     }
@@ -300,49 +324,110 @@ function ProductDetail() {
       "/Pictures/placeholder.jpeg"
   }
 
-  const addToCart = () => {
-    if (!product) return
-
-    if (
-      quantityAvailable === null ||
-      quantityAvailable <= 0
-    ) {
-      alert("This product is currently out of stock")
+  const addToCart = (selectedOption) => {
+    if (!product || !selectedOption) {
       return
     }
 
-    const cart =
-      JSON.parse(localStorage.getItem("cart")) || []
+    if (
+      selectedOption.quantityAvailable <= 0
+    ) {
+      alert(
+        "This purchase option is currently out of stock"
+      )
+      return
+    }
+
+    let cart = []
+
+    try {
+      const savedCart =
+        localStorage.getItem("cart")
+
+      cart = savedCart
+        ? JSON.parse(savedCart)
+        : []
+
+      if (!Array.isArray(cart)) {
+        cart = []
+      }
+    } catch (error) {
+      console.error(
+        "Failed to read shopping cart:",
+        error
+      )
+
+      cart = []
+    }
 
     const existingItem = cart.find(
       (item) =>
-        Number(item.ID) === Number(product.ID)
+        Number(item.ID) ===
+          Number(product.ID) &&
+        Number(item.sourceID) ===
+          Number(
+            selectedOption.sourceID
+          ) &&
+        Number(item.stockItemID) ===
+          Number(
+            selectedOption.itemID
+          )
     )
 
     if (existingItem) {
+      const currentQuantity = Number(
+        existingItem.quantity || 0
+      )
+
       if (
-        Number(existingItem.quantity) >=
-        Number(quantityAvailable)
+        currentQuantity >=
+        selectedOption.quantityAvailable
       ) {
         alert(
-          "You cannot add more than the available quantity"
+          `Only ${selectedOption.quantityAvailable} item(s) are available from ${selectedOption.sourceName}`
         )
         return
       }
 
-      existingItem.quantity += 1
+      existingItem.quantity =
+        currentQuantity + 1
+
+      existingItem.price =
+        selectedOption.price
+
       existingItem.quantityAvailable =
-        quantityAvailable
-      existingItem.price = price
+        selectedOption.quantityAvailable
+
+      existingItem.sourceName =
+        selectedOption.sourceName
+
+      existingItem.sourceLink =
+        selectedOption.sourceLink
     } else {
       cart.push({
         ...product,
+
         genreName,
         subGenreName,
-        sourceNames,
-        sourceLink,
-        price,
-        quantityAvailable,
+
+        stockItemID:
+          selectedOption.itemID,
+
+        sourceID:
+          selectedOption.sourceID,
+
+        sourceName:
+          selectedOption.sourceName,
+
+        sourceLink:
+          selectedOption.sourceLink,
+
+        price:
+          selectedOption.price,
+
+        quantityAvailable:
+          selectedOption.quantityAvailable,
+
         quantity: 1
       })
     }
@@ -352,7 +437,9 @@ function ProductDetail() {
       JSON.stringify(cart)
     )
 
-    alert(`${product.Name} added to cart`)
+    alert(
+      `${product.Name} from ${selectedOption.sourceName} added to cart`
+    )
   }
 
   if (loading) {
@@ -383,16 +470,16 @@ function ProductDetail() {
     product.ID
   }${imageExtensions[imageExtensionIndex]}`
 
-  const formattedPrice =
-    price !== null &&
-    Number.isFinite(Number(price))
-      ? `S$${Number(price).toFixed(2)}`
-      : "N/A"
-
-  const formattedQuantity =
-    quantityAvailable !== null &&
-    quantityAvailable !== undefined
-      ? quantityAvailable
+  const publishedYear =
+    product.Published &&
+    !Number.isNaN(
+      new Date(
+        product.Published
+      ).getFullYear()
+    )
+      ? new Date(
+          product.Published
+        ).getFullYear()
       : "N/A"
 
   return (
@@ -401,17 +488,24 @@ function ProductDetail() {
         <div className="product-image-placeholder">
           <img
             src={productImagePath}
-            alt={product.Name || "Product image"}
+            alt={
+              product.Name ||
+              "Product image"
+            }
             className="detail-cover"
             onError={handleImageError}
           />
         </div>
 
         <div className="product-detail-info">
-          <h1>{product.Name || "Unnamed Product"}</h1>
+          <h1>
+            {product.Name ||
+              "Unnamed Product"}
+          </h1>
 
           <p>
-            <strong>ID:</strong> {product.ID}
+            <strong>ID:</strong>{" "}
+            {product.ID}
           </p>
 
           <p>
@@ -430,41 +524,8 @@ function ProductDetail() {
           </p>
 
           <p>
-            <strong>Price:</strong>{" "}
-            {formattedPrice}
-          </p>
-
-          <p>
-            <strong>Available Quantity:</strong>{" "}
-            {formattedQuantity}
-          </p>
-
-          <p>
-            <strong>Source:</strong>{" "}
-            {sourceNames.length > 0
-              ? sourceNames.join(", ")
-              : "N/A"}
-          </p>
-
-          {sourceLink && (
-            <p>
-              <a
-                href={sourceLink}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Visit Source
-              </a>
-            </p>
-          )}
-
-          <p>
             <strong>Published:</strong>{" "}
-            {product.Published
-              ? new Date(
-                  product.Published
-                ).getFullYear()
-              : "N/A"}
+            {publishedYear}
           </p>
 
           <h3>Description</h3>
@@ -474,18 +535,96 @@ function ProductDetail() {
               "No description available."}
           </p>
 
-          <button
-            type="button"
-            onClick={addToCart}
-            disabled={
-              quantityAvailable === null ||
-              quantityAvailable <= 0
-            }
-          >
-            {quantityAvailable > 0
-              ? "Add to Cart"
-              : "Out of Stock"}
-          </button>
+          <h3>Purchase Options</h3>
+
+          {purchaseOptions.length === 0 ? (
+            <p className="product-no-options">
+              No purchase options are
+              currently available.
+            </p>
+          ) : (
+            <div className="purchase-options">
+              {purchaseOptions.map(
+                (option) => {
+                  const validPrice =
+                    Number.isFinite(
+                      Number(option.price)
+                    )
+
+                  const formattedPrice =
+                    validPrice
+                      ? `S$${Number(
+                          option.price
+                        ).toFixed(2)}`
+                      : "N/A"
+
+                  const isOutOfStock =
+                    option.quantityAvailable <=
+                    0
+
+                  return (
+                    <div
+                      className="purchase-option"
+                      key={`${
+                        option.itemID
+                      }-${
+                        option.sourceID
+                      }`}
+                    >
+                      <div className="purchase-option-info">
+                        <div className="purchase-option-source">
+                          <strong>
+                            {
+                              option.sourceName
+                            }
+                          </strong>
+
+                          {option.sourceLink && (
+                            <a
+                              href={
+                                option.sourceLink
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Visit Source
+                            </a>
+                          )}
+                        </div>
+
+                        <div className="purchase-option-details">
+                          <span className="purchase-option-price">
+                            {
+                              formattedPrice
+                            }
+                          </span>
+
+                          <span className="purchase-option-stock">
+                            {option.quantityAvailable}{" "}
+                            available
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          addToCart(option)
+                        }
+                        disabled={
+                          isOutOfStock
+                        }
+                      >
+                        {isOutOfStock
+                          ? "Out of Stock"
+                          : "Add to Cart"}
+                      </button>
+                    </div>
+                  )
+                }
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
