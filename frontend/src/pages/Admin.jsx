@@ -174,8 +174,10 @@ const [staffMessage, setStaffMessage] = useState("")
       }
 
       setProducts((prevProducts) =>
-        prevProducts.filter((product) => product.ID !== productID)
-      )
+        prevProducts.filter(
+            (product) => Number(product.ID) !== Number(productID)
+        )
+        )
 
       alert("Product deleted successfully")
     } catch (error) {
@@ -184,10 +186,43 @@ const [staffMessage, setStaffMessage] = useState("")
     }
   }
 
-  const matchesSearch = (values) =>
-    values.some((value) =>
-      safeText(value).toLowerCase().includes(search.toLowerCase())
-    )
+
+const getProductNameByID = (productID) => {
+  const found = products.find(
+    (product) => Number(product.ID) === Number(productID)
+  )
+
+  return found ? found.Name : "N/A"
+}
+
+const getSourceNameByID = (sourceID) => {
+  const found = sources.find(
+    (source) =>
+      Number(source.Sourceid || source.SourceId || source.SourceID) ===
+      Number(sourceID)
+  )
+
+  return found
+    ? safeText(found.Source_name || found.SourceName || found.Name)
+    : "N/A"
+}
+
+
+
+  const matchesSearch = (values) => {
+  const searchText = search.trim().toLowerCase()
+
+  if (!searchText) {
+    return true
+  }
+
+  return values.some((value) =>
+    safeText(value)
+      .trim()
+      .toLowerCase()
+      .includes(searchText)
+  )
+}
 
   const filteredProducts = products.filter((product) =>
     matchesSearch([
@@ -203,7 +238,10 @@ const [staffMessage, setStaffMessage] = useState("")
   .slice()
   .sort((a, b) => Number(a.ID) - Number(b.ID))
 
-const totalProductPages = Math.ceil(sortedProducts.length / productsPerPage)
+const totalProductPages = Math.max(
+  1,
+  Math.ceil(sortedProducts.length / productsPerPage)
+)
 
 const paginatedProducts = sortedProducts.slice(
   (productPage - 1) * productsPerPage,
@@ -218,26 +256,44 @@ const paginatedProducts = sortedProducts.slice(
   .slice()
   .sort((a, b) => Number(a.UserID) - Number(b.UserID))
 
-const totalUserPages = Math.ceil(sortedUsers.length / usersPerPage)
+const totalUserPages = Math.max(
+  1,
+  Math.ceil(sortedUsers.length / usersPerPage)
+)
 
 const paginatedUsers = sortedUsers.slice(
   (userPage - 1) * usersPerPage,
   userPage * usersPerPage
 )
 
-  const filteredStocktake = stocktake.filter((item) =>
-    matchesSearch([
-        item.ItemId,
-        item.ItemID,
-        item.Sourceid,
-        item.SourceId,
-        item.SourceID,
-        item.ProductId,
-        item.ProductID,
-        item.Quantity,
-        item.Price
-    ])
-    )
+  const filteredStocktake = stocktake.filter((item) => {
+  const itemID = item.ItemId || item.ItemID
+
+  const sourceID =
+    item.Sourceid ||
+    item.SourceId ||
+    item.SourceID
+
+  const productID =
+    item.ProductId ||
+    item.ProductID ||
+    item.Productid
+
+  const sourceName = getSourceNameByID(sourceID)
+  const productName = getProductNameByID(productID)
+
+  return matchesSearch([
+    itemID,
+    `#${itemID}`,
+    sourceID,
+    sourceName,
+    productID,
+    productName,
+    item.Quantity,
+    item.Price,
+    `S$${item.Price}`
+  ])
+})
 
     const sortedStocktake = filteredStocktake
     .slice()
@@ -246,7 +302,10 @@ const paginatedUsers = sortedUsers.slice(
         Number(a.ItemId || a.ItemID) - Number(b.ItemId || b.ItemID)
     )
 
-    const totalStockPages = Math.ceil(sortedStocktake.length / stockPerPage)
+    const totalStockPages = Math.max(
+  1,
+  Math.ceil(sortedStocktake.length / stockPerPage)
+)
 
     const paginatedStocktake = sortedStocktake.slice(
     (stockPage - 1) * stockPerPage,
@@ -269,8 +328,9 @@ const paginatedUsers = sortedUsers.slice(
   .slice()
   .sort((a, b) => Number(a.OrderID) - Number(b.OrderID))
 
-const totalOrderPages = Math.ceil(
-  sortedOrders.length / ordersPerPage
+const totalOrderPages = Math.max(
+  1,
+  Math.ceil(sortedOrders.length / ordersPerPage)
 )
 
 const paginatedOrders = sortedOrders.slice(
@@ -360,10 +420,13 @@ const handleAddProduct = async (e) => {
   formData.append("Image", newProductImage)
 
   try {
-    const response = await fetch("/api-add-product", {
-      method: "POST",
-      body: formData
-    })
+    const response = await fetch(
+  "http://localhost:5050/api-add-product",
+  {
+    method: "POST",
+    body: formData
+  }
+)
 
     const responseText = await response.text()
 
@@ -827,26 +890,6 @@ const getSubGenreName = (product) => {
   return subGenreId
 }
 
-const getProductNameByID = (productID) => {
-  const found = products.find(
-    (product) => Number(product.ID) === Number(productID)
-  )
-
-  return found ? found.Name : "N/A"
-}
-
-const getSourceNameByID = (sourceID) => {
-  const found = sources.find(
-    (source) =>
-      Number(source.Sourceid || source.SourceId || source.SourceID) ===
-      Number(sourceID)
-  )
-
-  return found
-    ? safeText(found.Source_name || found.SourceName || found.Name)
-    : "N/A"
-}
-
 
 
 const changeTab = (tab) => {
@@ -1270,14 +1313,15 @@ const changeTab = (tab) => {
                     )}
 
                 <textarea
-                    placeholder="Description"
-                    value={newProduct.Description}
-                    onChange={(e) =>
+                placeholder="Description"
+                value={newProduct.Description}
+                onChange={(e) =>
                     setNewProduct({
-                        ...newProduct,
-                        Description: e.target.value
+                    ...newProduct,
+                    Description: e.target.value
                     })
-                    }
+                }
+                required
                 />
 
                 <button
@@ -1353,11 +1397,6 @@ const changeTab = (tab) => {
                     Next
                 </button>
                 </div>
-
-                {filteredProducts.length === 0 && (
-                <p className="profile-empty">No products found.</p>
-                )}
-
 
                 {filteredProducts.length === 0 && (
                 <p className="profile-empty">No products found.</p>
