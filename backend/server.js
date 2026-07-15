@@ -82,10 +82,10 @@ const getAdminCookie = async () => {
 
 app.post("/api-register", async (req, res) => {
   try {
-    const { username, name, password } = req.body
+    const { username, name, password, email } = req.body
 
-    if (!username || !name || !password) {
-      return res.status(400).send("Username, name and password are required")
+    if (!username || !name || !password || !email) {
+      return res.status(400).send("Username, name, password and email are required")
     }
 
     const setCookie = await getAdminCookie()
@@ -107,6 +107,7 @@ app.post("/api-register", async (req, res) => {
         body: JSON.stringify({
           UserName: username,
           Name: name,
+          Email: email,
           IsAdmin: 0,
           Salt: salt,
           HashPW: hashPW

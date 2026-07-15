@@ -578,12 +578,14 @@ const handleCreateStaffAccount = async (e) => {
   const cleanEmail = (newStaff.email || "").trim()
 
   if (!cleanName || !cleanUsername || !cleanPassword) {
-    setStaffMessage("Please complete all staff account fields")
+    setStaffMessage("Please complete all required staff account fields")
     return
   }
 
   const duplicateUser = users.find(
-    (user) => safeText(user.UserName).toLowerCase() === cleanUsername.toLowerCase()
+    (user) =>
+      safeText(user.UserName).toLowerCase() ===
+      cleanUsername.toLowerCase()
   )
 
   if (duplicateUser) {
@@ -591,7 +593,11 @@ const handleCreateStaffAccount = async (e) => {
     return
   }
 
-  const roleTag = newStaff.role === "admin" ? "admin" : "employee"
+  const roleTag =
+    newStaff.role === "admin"
+      ? "admin"
+      : "employee"
+
   const storedName = `${cleanName} ${roleTag}`
 
   try {
@@ -603,39 +609,51 @@ const handleCreateStaffAccount = async (e) => {
       body: JSON.stringify({
         username: cleanUsername,
         name: storedName,
-        email: newStaff.email || null,
+        email: cleanEmail || null,
         password: cleanPassword
       })
     })
 
-    const text = await response.text()
+    const resultText = await response.text()
 
     if (!response.ok) {
-      setStaffMessage(text || "Failed to create staff account")
+      setStaffMessage(
+        resultText || "Failed to create staff account"
+      )
       return
     }
 
     if (newStaff.role === "admin") {
-      const usersResponse = await fetch("/api/inft3050/User?limit=1000")
+      const usersResponse = await fetch(
+        "/api/inft3050/User?limit=1000"
+      )
+
       const usersData = await usersResponse.json()
 
       const createdUser = usersData.list?.find(
-        (user) => safeText(user.UserName).toLowerCase() === cleanUsername.toLowerCase()
+        (user) =>
+          safeText(user.UserName).toLowerCase() ===
+          cleanUsername.toLowerCase()
       )
 
       if (createdUser) {
-        const updateResponse = await fetch(`/api-edit-user/${createdUser.UserID}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            IsAdmin: 1
-          })
-        })
+        const updateResponse = await fetch(
+          `/api-edit-user/${createdUser.UserID}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              IsAdmin: 1
+            })
+          }
+        )
 
         if (!updateResponse.ok) {
-          setStaffMessage("Account created, but failed to set admin role")
+          setStaffMessage(
+            "Account created, but failed to set admin role"
+          )
           loadAdminData()
           return
         }
