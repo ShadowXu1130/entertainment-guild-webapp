@@ -6,6 +6,7 @@ function Register() {
 
   const [username, setUsername] = useState("")
   const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState("")
 
@@ -22,6 +23,7 @@ function Register() {
         body: JSON.stringify({
           username,
           name,
+          email,
           password
         })
       })
@@ -80,6 +82,17 @@ function Register() {
           placeholder="Enter username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+
+        <label className="login-input-label">Email</label>
+
+        <input
+          className="login-input"
+          type="email"
+          placeholder="Enter email address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
 

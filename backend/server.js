@@ -1255,16 +1255,12 @@ app.post(
         suburb,
         state,
         postCode,
+        phoneNumber,
+        cardOwner,
+        cardNumber,
+        expiry,
         items
       } = req.body
-    console.log("========== ORDER ITEMS ==========")
-
-    items.forEach(item => {
-    console.log(item)
-    })
-
-    console.log("=================================")
-
       const numericUserID =
         Number(userID)
 
@@ -1470,7 +1466,8 @@ app.post(
                 Email:
                   email || "",
 
-                PhoneNumber: "",
+                PhoneNumber: 
+                phoneNumber || "",
 
                 StreetAddress:
                   streetAddress,
@@ -1485,13 +1482,16 @@ app.post(
                   state,
 
                 CardOwner:
+                  cardOwner ||
                   name ||
                   username ||
                   "",
 
-                CardNumber: "",
+                CardNumber:
+                  cardNumber || "",
 
-                Expiry: "",
+                Expiry:
+                  expiry || "",
 
                 CVV: 0
               })
@@ -1684,6 +1684,39 @@ app.post(
         saveCustomerMap(
           customerMap
         )
+      }
+
+      const updateCustomerResponse =
+        await fetch(
+          `http://localhost:3001/api/inft3050/TO/${customerID}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: setCookie
+            },
+            body: JSON.stringify({
+              Email: email || "",
+              PhoneNumber: phoneNumber || "",
+              StreetAddress: streetAddress,
+              PostCode: Number(postCode),
+              Suburb: suburb,
+              State: state,
+              CardOwner: cardOwner || name || username || "",
+              CardNumber: cardNumber || "",
+              Expiry: expiry || "",
+              CVV: 0
+            })
+          }
+        )
+
+      const updateCustomerText =
+        await updateCustomerResponse.text()
+
+      if (!updateCustomerResponse.ok) {
+        return res
+          .status(updateCustomerResponse.status)
+          .send(updateCustomerText)
       }
 
       const orderResponse =

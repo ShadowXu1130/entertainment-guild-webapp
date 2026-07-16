@@ -4,7 +4,17 @@ import { useNavigate } from "react-router-dom"
 function Checkout() {
   const navigate = useNavigate()
   const [cartItems, setCartItems] = useState([])
-  const [formData, setFormData] = useState({ streetAddress: "", suburb: "", state: "", postCode: "" })
+  const [formData, setFormData] = useState({
+    streetAddress: "",
+    suburb: "",
+    state: "",
+    postCode: "",
+    phoneNumber: "",
+    cardOwner: "",
+    cardNumber: "",
+    expiry: "",
+    cvv: ""
+  })
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -59,6 +69,22 @@ if (invalidItem) {
   )
 }
 
+const cardDigits = formData.cardNumber.replace(/\D/g, "")
+
+if (cardDigits.length < 13 || cardDigits.length > 19) {
+  return setMessage("Enter a valid card number.")
+}
+
+if (!/^\d{2}\/\d{2}$/.test(formData.expiry)) {
+  return setMessage("Expiry must use MM/YY.")
+}
+
+if (!/^\d{3,4}$/.test(formData.cvv)) {
+  return setMessage("Enter a valid CVV.")
+}
+
+const maskedCardNumber = `**** **** **** ${cardDigits.slice(-4)}`
+
 setIsSubmitting(true)
     try {
       const response = await fetch("http://localhost:5050/api-create-order", {
@@ -73,6 +99,10 @@ setIsSubmitting(true)
           suburb: formData.suburb.trim(),
           state: formData.state.trim().toUpperCase(),
           postCode: formData.postCode.trim(),
+          phoneNumber: formData.phoneNumber.trim(),
+          cardOwner: formData.cardOwner.trim(),
+          cardNumber: maskedCardNumber,
+          expiry: formData.expiry.trim(),
           items: cartItems.map((item) => ({
             productID: Number(item.ID),
             quantity: Number(item.quantity),
@@ -110,6 +140,23 @@ setIsSubmitting(true)
           </select>
           <label>Post Code</label>
           <input name="postCode" value={formData.postCode} onChange={handleChange} placeholder="2204" pattern="[0-9]{4}" maxLength="4" required />
+          <label>Phone Number</label>
+          <input name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} placeholder="0400 000 000"  type="tel"  autoComplete="tel"  required/>
+
+          <h2>Payment Method</h2>
+
+          <label>Cardholder Name</label>
+          <input name="cardOwner" value={formData.cardOwner} onChange={handleChange} placeholder="Name on card" autoComplete="cc-name" required />
+
+          <label>Card Number</label>
+          <input name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="1234 5678 9012 3456" inputMode="numeric" autoComplete="cc-number" maxLength="19" required />
+
+          <label>Expiry</label>
+          <input name="expiry" value={formData.expiry} onChange={handleChange} placeholder="MM/YY" autoComplete="cc-exp" maxLength="5" required />
+
+          <label>CVV</label>
+          <input name="cvv" value={formData.cvv} onChange={handleChange} placeholder="123" type="password" inputMode="numeric" autoComplete="cc-csc" maxLength="4" required />
+
           <button type="submit" className="checkout-place-order-btn" disabled={isSubmitting}>{isSubmitting ? "Saving Order..." : "Place Order"}</button>
           {message && <p className="checkout-message">{message}</p>}
         </form>
