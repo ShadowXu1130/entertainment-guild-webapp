@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 function Cart() {
+  const navigate = useNavigate()
   const [cartItems, setCartItems] = useState([])
   const [openDetails, setOpenDetails] = useState({})
   const [paymentStatus, setPaymentStatus] = useState("")
@@ -47,16 +48,20 @@ function Cart() {
       return
     }
 
-    const results = ["approved", "declined", "timed-out"]
-    const randomResult = results[Math.floor(Math.random() * results.length)]
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true"
+    const userType = localStorage.getItem("userType")
 
-    setPaymentStatus(randomResult)
-
-    if (randomResult === "approved") {
-      localStorage.removeItem("cart")
-      setCartItems([])
-      setOpenDetails({})
+    if (!isLoggedIn) {
+      navigate("/login")
+      return
     }
+
+    if (userType !== "customer") {
+      setPaymentStatus("customer-only")
+      return
+    }
+
+    navigate("/checkout")
   }
 
   const getItemPrice = (item) => {
@@ -94,6 +99,7 @@ function Cart() {
           {paymentStatus === "declined" && "Payment declined. Please try again."}
           {paymentStatus === "timed-out" && "Payment timed out. Please retry checkout."}
           {paymentStatus === "empty" && "Your cart is empty. Please add products before checkout."}
+          {paymentStatus === "customer-only" && "Only customer accounts can place orders."}
         </div>
       )}
 

@@ -12,6 +12,8 @@ import Profile from "./pages/Profile"
 import Register from "./pages/Register"
 import Admin from "./pages/Admin"
 import Employee from "./pages/Employee"
+import Checkout from "./pages/Checkout"
+import OrderSuccess from "./pages/OrderSuccess"
 
 
 function App() {
@@ -31,6 +33,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/employee" element={<Employee />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
       </Routes>
     </BrowserRouter>
   )

@@ -364,11 +364,20 @@ function ProductDetail() {
       (item) =>
         Number(item.ID) ===
           Number(product.ID) &&
-        Number(item.sourceID) ===
+        Number(
+          item.SourceId ??
+          item.SourceID ??
+          item.sourceID
+        ) ===
           Number(
             selectedOption.sourceID
           ) &&
-        Number(item.stockItemID) ===
+        Number(
+          item.ItemId ??
+          item.ItemID ??
+          item.itemID ??
+          item.stockItemID
+        ) ===
           Number(
             selectedOption.itemID
           )
@@ -398,6 +407,12 @@ function ProductDetail() {
       existingItem.quantityAvailable =
         selectedOption.quantityAvailable
 
+      existingItem.ItemId =
+        selectedOption.itemID
+
+      existingItem.SourceId =
+        selectedOption.sourceID
+
       existingItem.sourceName =
         selectedOption.sourceName
 
@@ -410,10 +425,10 @@ function ProductDetail() {
         genreName,
         subGenreName,
 
-        stockItemID:
+        ItemId:
           selectedOption.itemID,
 
-        sourceID:
+        SourceId:
           selectedOption.sourceID,
 
         sourceName:
