@@ -29,7 +29,7 @@ const [userPage, setUserPage] = useState(1)
 const usersPerPage = 25
 const [orderPage, setOrderPage] = useState(1)
 const ordersPerPage = 25
-
+const [orderItemCounts, setOrderItemCounts] = useState({})
 
 
   const [newProduct, setNewProduct] = useState({
@@ -104,31 +104,79 @@ const [staffMessage, setStaffMessage] = useState("")
     loadAdminData()
   }, [navigate])
 
-  const loadAdminData = () => {
-    fetch("/api/inft3050/Product?limit=1000")
-      .then((res) => res.json())
-      .then((data) => setProducts(data.list || []))
-      .catch((err) => console.log(err))
 
-    fetch("/api/inft3050/User?limit=1000")
-      .then((res) => res.json())
-      .then((data) => setUsers(data.list || []))
-      .catch((err) => console.log(err))
+const loadAdminData = async () => {
+  fetch("/api/inft3050/Product?limit=1000")
+    .then((res) => res.json())
+    .then((data) => setProducts(data.list || []))
+    .catch((err) => console.log(err))
 
-    fetch("/api/inft3050/Stocktake?limit=1000")
-      .then((res) => res.json())
-      .then((data) => setStocktake(data.list || []))
-      .catch((err) => console.log(err))
+  fetch("/api/inft3050/User?limit=1000")
+    .then((res) => res.json())
+    .then((data) => setUsers(data.list || []))
+    .catch((err) => console.log(err))
 
-    fetch("/api/inft3050/Source?limit=1000")
-        .then((res) => res.json())
-        .then((data) => setSources(data.list || []))
-        .catch((err) => console.log(err))
+  fetch("/api/inft3050/Stocktake?limit=1000")
+    .then((res) => res.json())
+    .then((data) => setStocktake(data.list || []))
+    .catch((err) => console.log(err))
 
-    fetch("/api/inft3050/Orders?limit=1000")
-      .then((res) => res.json())
-      .then((data) => setOrders(data.list || []))
-      .catch((err) => console.log(err))
+  fetch("/api/inft3050/Source?limit=1000")
+    .then((res) => res.json())
+    .then((data) => setSources(data.list || []))
+    .catch((err) => console.log(err))
+
+  try {
+    const orderResponse = await fetch(
+      "/api/inft3050/Orders?limit=1000"
+    )
+
+    const orderData =
+      await orderResponse.json()
+
+    const orderList =
+      orderData.list || []
+
+    setOrders(orderList)
+
+    const counts = {}
+
+    await Promise.all(
+      orderList.map(async (order) => {
+        const orderID =
+          order.OrderID ||
+          order.OrderId ||
+          order.orderID
+
+        try {
+          const response = await fetch(
+            `http://localhost:5050/api-order-items/${orderID}`
+          )
+
+          if (!response.ok) {
+            counts[orderID] = 0
+            return
+          }
+
+          const data =
+            await response.json()
+
+          counts[orderID] =
+            Number(data.totalItems || 0)
+        } catch (error) {
+          counts[orderID] = 0
+        }
+      })
+    )
+
+    setOrderItemCounts(counts)
+  } catch (error) {
+    console.error("Load orders failed:", error)
+    setOrders([])
+    setOrderItemCounts({})
+  }
+
+
 
     fetch("/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000")
         .then((res) => res.json())
@@ -349,7 +397,13 @@ const paginatedUsers = sortedUsers.slice(
     order.postcode
 
   const itemCount =
-    order["ProductsInOrders List"]?.length || 0
+  orderItemCounts[orderID] ??
+  order["ProductsInOrders List"]?.reduce(
+    (total, item) =>
+      total + Number(item.Quantity || 1),
+    0
+  ) ??
+  0
 
   return matchesSearch([
     orderID,
@@ -1708,7 +1762,19 @@ const changeTab = (tab) => {
                         </td>
 
                         <td>
-                            {order["ProductsInOrders List"]?.length || 0}
+                          {
+                            orderItemCounts[
+                              order.OrderID ||
+                              order.OrderId ||
+                              order.orderID
+                            ] ??
+                            order["ProductsInOrders List"]?.reduce(
+                              (total, item) =>
+                                total + Number(item.Quantity || 1),
+                              0
+                            ) ??
+                            0
+                          }
                         </td>
                         </tr>
                     ))}

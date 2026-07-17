@@ -13,6 +13,58 @@ const customerMapPath = path.join(
   "customer-map.json"
 )
 
+const orderItemsMapPath = path.join(
+  __dirname,
+  "order-items-map.json"
+)
+
+const loadOrderItemsMap = () => {
+  try {
+    if (!fs.existsSync(orderItemsMapPath)) {
+      return {}
+    }
+
+    const data = JSON.parse(
+      fs.readFileSync(
+        orderItemsMapPath,
+        "utf-8"
+      )
+    )
+
+    if (
+      !data ||
+      typeof data !== "object" ||
+      Array.isArray(data)
+    ) {
+      return {}
+    }
+
+    return data
+  } catch (error) {
+    console.error(
+      "Failed to load order items map:",
+      error
+    )
+
+    return {}
+  }
+}
+
+const saveOrderItemsMap = (
+  orderItemsMap
+) => {
+  fs.writeFileSync(
+    orderItemsMapPath,
+    JSON.stringify(
+      orderItemsMap,
+      null,
+      2
+    ),
+    "utf-8"
+  )
+}
+
+
 const loadCustomerMap = () => {
   try {
     if (!fs.existsSync(customerMapPath)) {
@@ -1028,8 +1080,7 @@ app.post(
             },
 
             body: JSON.stringify({
-              UserID:
-                Number(PatronId),
+
 
               Email:
                 Email || "",
@@ -1039,7 +1090,7 @@ app.post(
 
               Salt: "",
 
-              HashedPW: ""
+              HashPW: ""
             })
           }
         )
@@ -1300,6 +1351,121 @@ app.post(
       const setCookie =
         await getAdminCookie()
 
+      const patronsResponse = await fetch(
+        "http://localhost:3001/api/inft3050/Patrons?limit=1000",
+        {
+          headers: {
+            Cookie: setCookie
+          }
+        }
+      )
+
+      const patronsText = await patronsResponse.text()
+
+      if (!patronsResponse.ok) {
+        return res
+          .status(patronsResponse.status)
+          .send(patronsText)
+      }
+
+      let patronsData = {}
+
+      try {
+        patronsData = JSON.parse(patronsText)
+      } catch {
+        return res
+          .status(500)
+          .send("Invalid patron data returned by API")
+      }
+
+      const normalizedEmail = String(email || "")
+        .trim()
+        .toLowerCase()
+
+      let patron = (patronsData.list || []).find((p) => {
+        const patronEmail = String(
+          p.Email || ""
+        )
+          .trim()
+          .toLowerCase()
+
+        return patronEmail === normalizedEmail
+      })
+
+      if (!patron) {
+        const createPatronResponse = await fetch(
+          "http://localhost:3001/api/inft3050/Patrons",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: setCookie
+            },
+            body: JSON.stringify({
+              Email: email || "",
+              Name: name || username || "",
+              Salt: "",
+              HashPW: ""
+            })
+          }
+        )
+
+        const createPatronText =
+          await createPatronResponse.text()
+
+        if (!createPatronResponse.ok) {
+          return res
+            .status(createPatronResponse.status)
+            .send(createPatronText)
+        }
+
+        const reloadPatronsResponse =
+          await fetch(
+            "http://localhost:3001/api/inft3050/Patrons?limit=1000",
+            {
+              headers: {
+                Cookie: setCookie
+              }
+            }
+          )
+
+        const reloadPatronsData =
+          await reloadPatronsResponse.json()
+
+        patron = (
+          reloadPatronsData.list || []
+        )
+          .filter((p) => {
+            const patronEmail = String(
+              p.Email || ""
+            )
+              .trim()
+              .toLowerCase()
+
+            return patronEmail === normalizedEmail
+          })
+          .sort(
+            (a, b) =>
+              Number(b.UserID || 0) -
+              Number(a.UserID || 0)
+          )[0]
+      }
+
+      const patronUserID = Number(
+        patron?.UserID ||
+        patron?.UserId ||
+        patron?.userID ||
+        patron?.userId
+      )
+
+      if (!patronUserID) {
+        return res
+          .status(500)
+          .send(
+            "Could not find valid Patron ID"
+          )
+      }
+
       const customerMap =
         loadCustomerMap()
 
@@ -1323,15 +1489,25 @@ app.post(
             }
           )
 
-        if (
-          !existingCustomerResponse.ok
-        ) {
+        let mappedCustomerIsValid = false
+
+        if (existingCustomerResponse.ok) {
+          const existingCustomer =
+            await existingCustomerResponse.json()
+
+          const mappedPatronID =
+            existingCustomer.PatronId ??
+            existingCustomer.PatronID ??
+            existingCustomer.patronId ??
+            existingCustomer.patronID
+
+          mappedCustomerIsValid =
+            Number(mappedPatronID) === patronUserID
+        }
+
+        if (!mappedCustomerIsValid) {
           delete customerMap[userKey]
-
-          saveCustomerMap(
-            customerMap
-          )
-
+          saveCustomerMap(customerMap)
           customerID = 0
         }
       }
@@ -1399,18 +1575,19 @@ app.post(
                 .trim()
                 .toLowerCase()
 
-              const matchesUser =
-                Number(patronID) === numericUserID
+              const matchesPatron =
+                Number(patronID) === patronUserID
 
-              const matchesOldCustomer =
+              const matchesLegacyCustomer =
                 (
                   patronID === null ||
                   patronID === undefined ||
                   patronID === ""
                 ) &&
+                normalizedEmail &&
                 customerEmail === normalizedEmail
 
-              return matchesUser || matchesOldCustomer
+              return matchesPatron || matchesLegacyCustomer
             })
             .sort(
               (a, b) =>
@@ -1468,7 +1645,7 @@ app.post(
               },
 
               body: JSON.stringify({
-                PatronId: numericUserID,
+                PatronId: patronUserID,
 
                 Email:
                   email || "",
@@ -1613,7 +1790,7 @@ app.post(
                 .toLowerCase()
 
               return (
-                Number(patronID) === numericUserID &&
+                Number(patronID) === patronUserID &&
                 String(customer.StreetAddress || "") ===
                   String(streetAddress) &&
                 String(customer.PostCode || "") ===
@@ -1677,21 +1854,32 @@ app.post(
           `http://localhost:3001/api/inft3050/TO/${customerID}`,
           {
             method: "PATCH",
+
             headers: {
               "Content-Type": "application/json",
               Cookie: setCookie
             },
+
             body: JSON.stringify({
-              PatronId: numericUserID,
               Email: email || "",
               PhoneNumber: phoneNumber || "",
               StreetAddress: streetAddress,
               PostCode: Number(postCode),
               Suburb: suburb,
               State: state,
-              CardOwner: cardOwner || name || username || "",
-              CardNumber: cardNumber || "",
-              Expiry: expiry || "",
+
+              CardOwner:
+                cardOwner ||
+                name ||
+                username ||
+                "",
+
+              CardNumber:
+                cardNumber || "",
+
+              Expiry:
+                expiry || "",
+
               CVV: 0
             })
           }
@@ -1701,9 +1889,16 @@ app.post(
         await updateCustomerResponse.text()
 
       if (!updateCustomerResponse.ok) {
+        console.error(
+          "Update customer failed:",
+          updateCustomerText
+        )
+
         return res
           .status(updateCustomerResponse.status)
-          .send(updateCustomerText)
+          .send(
+            `Update customer failed: ${updateCustomerText}`
+          )
       }
 
       const orderResponse =
@@ -1742,11 +1937,16 @@ app.post(
         await orderResponse.text()
 
       if (!orderResponse.ok) {
+        console.error(
+          "Create order record failed:",
+          orderText
+        )
+
         return res
-          .status(
-            orderResponse.status
+          .status(orderResponse.status)
+          .send(
+            `Create order record failed: ${orderText}`
           )
-          .send(orderText)
       }
 
       let createdOrder = {}
@@ -1853,6 +2053,160 @@ app.post(
           )
       }
 
+          const createdOrderItems = []
+
+          for (const item of items) {
+            const catalogProductID = Number(
+              item.productID ??
+              item.ProductID ??
+              item.ProductId
+            )
+
+            const stockItemID = Number(
+              item.itemID ??
+              item.ItemId ??
+              item.ItemID
+            )
+
+            const quantity = Number(
+              item.quantity ??
+              item.Quantity ??
+              1
+            )
+
+            if (
+              !catalogProductID ||
+              !stockItemID ||
+              !quantity ||
+              quantity < 1
+            ) {
+              return res
+                .status(400)
+                .send(
+                  "One or more order items contain invalid product, stock item or quantity data"
+                )
+            }
+
+            const stockResponse = await fetch(
+              `http://localhost:3001/api/inft3050/Stocktake/${stockItemID}`,
+              {
+                headers: {
+                  Cookie: setCookie
+                }
+              }
+            )
+
+            const stockText =
+              await stockResponse.text()
+
+            if (!stockResponse.ok) {
+              return res
+                .status(stockResponse.status)
+                .send(
+                  `Could not load stock item: ${stockText}`
+                )
+            }
+
+            let stockItem
+
+            try {
+              stockItem =
+                JSON.parse(stockText)
+            } catch {
+              return res
+                .status(500)
+                .send(
+                  "Invalid stock item data returned by API"
+                )
+            }
+
+            const currentQuantity =
+              Number(stockItem.Quantity)
+
+            if (
+              !Number.isFinite(currentQuantity) ||
+              currentQuantity < quantity
+            ) {
+              return res
+                .status(409)
+                .send(
+                  `Insufficient stock for product ${catalogProductID}`
+                )
+            }
+
+            const updatedQuantity =
+              currentQuantity - quantity
+
+            const updateStockResponse =
+              await fetch(
+                `http://localhost:3001/api/inft3050/Stocktake/${stockItemID}`,
+                {
+                  method: "PATCH",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+
+                    Cookie: setCookie
+                  },
+
+                  body: JSON.stringify({
+                    Quantity:
+                      updatedQuantity
+                  })
+                }
+              )
+
+            const updateStockText =
+              await updateStockResponse.text()
+
+            if (!updateStockResponse.ok) {
+              return res
+                .status(
+                  updateStockResponse.status
+                )
+                .send(
+                  `Order was created, but stock update failed: ${updateStockText}`
+                )
+            }
+
+            createdOrderItems.push({
+              OrderId:
+                orderID,
+
+              ProductId:
+                catalogProductID,
+
+              StockItemId:
+                stockItemID,
+
+              Quantity:
+                quantity,
+
+              RemainingStock:
+                updatedQuantity
+            })
+          }
+
+          const orderItemsMap =
+            loadOrderItemsMap()
+
+          orderItemsMap[String(orderID)] = {
+            totalItems:
+              createdOrderItems.reduce(
+                (total, item) =>
+                  total +
+                  Number(item.Quantity || 0),
+                0
+              ),
+
+            items:
+              createdOrderItems
+          }
+
+          saveOrderItemsMap(
+            orderItemsMap
+          )
 
       return res
         .status(201)
@@ -1869,37 +2223,7 @@ app.post(
           Customer:
             customerID,
 
-          items:
-            items.map(
-              (item) => ({
-                ProductID:
-                  Number(
-                    item.productID
-                  ),
-
-                ItemId:
-                  Number(
-                    item.itemID
-                  ),
-
-                SourceId:
-                  Number(
-                    item.sourceID
-                  ),
-
-                quantity:
-                  Number(
-                    item.quantity ||
-                    1
-                  ),
-
-                price:
-                  Number(
-                    item.price ||
-                    0
-                  )
-              })
-            )
+          items: createdOrderItems
         })
     } catch (error) {
       console.error(error)
@@ -1912,6 +2236,37 @@ app.post(
     }
   }
 )
+
+app.get(
+  "/api-order-items/:orderID",
+  (req, res) => {
+    try {
+      const orderItemsMap =
+        loadOrderItemsMap()
+
+      const orderData =
+        orderItemsMap[
+          String(req.params.orderID)
+        ]
+
+      return res.json(
+        orderData || {
+          totalItems: 0,
+          items: []
+        }
+      )
+    } catch (error) {
+      console.error(error)
+
+      return res
+        .status(500)
+        .send(
+          "Load order items failed"
+        )
+    }
+  }
+)
+
 const PORT = 5050
 
 app.listen(PORT, () => {

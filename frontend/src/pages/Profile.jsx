@@ -6,6 +6,8 @@ function Profile() {
   const [customer, setCustomer] = useState(null)
   const [orders, setOrders] = useState([])
   const navigate = useNavigate()
+  const [orderItemCounts, setOrderItemCounts] =
+  useState({})
 
   const [showContactModal, setShowContactModal] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
@@ -58,20 +60,40 @@ function Profile() {
     const customerRes = await fetch("/api/inft3050/TO?limit=1000")
     const customerData = await customerRes.json()
 
-    const currentCustomer =
-      customerData.list.find(
-        (c) =>
-          Number(c.PatronId) === Number(currentUser.UserID)
-      ) ||
-      customerData.list.find(
-        (c) =>
-          String(c.Email || "")
-            .trim()
-            .toLowerCase() ===
-          String(currentUser.Email || "")
-            .trim()
-            .toLowerCase()
-      )
+    const normalizedUserEmail = String(
+      currentUser.Email || ""
+    )
+      .trim()
+      .toLowerCase()
+
+    const currentCustomer = (
+      customerData.list || []
+    )
+      .filter((customer) => {
+        const customerEmail = String(
+          customer.Email || ""
+        )
+          .trim()
+          .toLowerCase()
+
+        return (
+          normalizedUserEmail &&
+          customerEmail === normalizedUserEmail
+        )
+      })
+      .sort(
+        (a, b) =>
+          Number(
+            b.CustomerID ||
+            b.CustomerId ||
+            0
+          ) -
+          Number(
+            a.CustomerID ||
+            a.CustomerId ||
+            0
+          )
+      )[0]
 
     setCustomer(currentCustomer || null)
 
@@ -89,17 +111,59 @@ function Profile() {
 
     if (!currentCustomer) {
       setOrders([])
+      setOrderItemCounts({})
       return
     }
 
     const orderRes = await fetch("/api/inft3050/Orders?limit=1000")
     const orderData = await orderRes.json()
 
-    const customerOrders = orderData.list.filter(
-      (order) => Number(order.Customer) === Number(currentCustomer.CustomerID)
+    const customerOrders = (
+      orderData.list || []
+    ).filter(
+      (order) =>
+        Number(order.Customer) ===
+        Number(currentCustomer.CustomerID)
     )
 
     setOrders(customerOrders)
+
+    const counts = {}
+
+    await Promise.all(
+      customerOrders.map(async (order) => {
+        const orderID =
+          order.OrderID ||
+          order.OrderId ||
+          order.orderID
+
+        try {
+          const response = await fetch(
+            `http://localhost:5050/api-order-items/${orderID}`
+          )
+
+          if (!response.ok) {
+            counts[orderID] = 0
+            return
+          }
+
+          const data =
+            await response.json()
+
+          counts[orderID] =
+            Number(data.totalItems || 0)
+        } catch (error) {
+          console.error(
+            `Load items for order ${orderID} failed:`,
+            error
+          )
+
+          counts[orderID] = 0
+        }
+      })
+    )
+
+    setOrderItemCounts(counts)
   }
 
   const handleUpdateContact = async () => {
@@ -324,7 +388,21 @@ function Profile() {
                     <td>{safeText(order.Suburb)}</td>
                     <td>{safeText(order.State)}</td>
                     <td>{safeText(order.PostCode)}</td>
-                    <td>{order["ProductsInOrders List"]?.length || 0}</td>
+                    <td>
+                      {
+                        orderItemCounts[
+                          order.OrderID ||
+                          order.OrderId ||
+                          order.orderID
+                        ] ??
+                        order["ProductsInOrders List"]?.reduce(
+                          (total, item) =>
+                            total + Number(item.Quantity || 1),
+                          0
+                        ) ??
+                        0
+                      }
+                    </td>
                   </tr>
                 ))}
               </tbody>
