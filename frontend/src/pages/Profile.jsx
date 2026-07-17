@@ -58,9 +58,20 @@ function Profile() {
     const customerRes = await fetch("/api/inft3050/TO?limit=1000")
     const customerData = await customerRes.json()
 
-    const currentCustomer = customerData.list.find(
-      (c) => Number(c.PatronId) === Number(currentUser.UserID)
-    )
+    const currentCustomer =
+      customerData.list.find(
+        (c) =>
+          Number(c.PatronId) === Number(currentUser.UserID)
+      ) ||
+      customerData.list.find(
+        (c) =>
+          String(c.Email || "")
+            .trim()
+            .toLowerCase() ===
+          String(currentUser.Email || "")
+            .trim()
+            .toLowerCase()
+      )
 
     setCustomer(currentCustomer || null)
 

@@ -1145,11 +1145,19 @@ app.patch(
             },
 
             body: JSON.stringify({
-              Email:
-                req.body.Email,
-
-              PhoneNumber:
-                req.body.PhoneNumber
+              Email: req.body.Email,
+              PhoneNumber: req.body.PhoneNumber,
+              StreetAddress: req.body.StreetAddress,
+              PostCode:
+                req.body.PostCode === undefined ||
+                req.body.PostCode === ""
+                  ? undefined
+                  : Number(req.body.PostCode),
+              Suburb: req.body.Suburb,
+              State: req.body.State,
+              CardOwner: req.body.CardOwner,
+              CardNumber: req.body.CardNumber,
+              Expiry: req.body.Expiry
             })
           }
         )
@@ -1376,35 +1384,34 @@ app.post(
           const matchingCustomers = (
             customersData.list || []
           )
-            .filter(
-              (customer) => {
-                const patronID =
-                  customer.PatronId ??
-                  customer.PatronID ??
-                  customer.patronId ??
-                  customer.patronID
+            .filter((customer) => {
+              const patronID =
+                customer.PatronId ??
+                customer.PatronID ??
+                customer.patronId ??
+                customer.patronID
 
-                const customerEmail =
-                  String(
-                    customer.Email ||
-                    customer.email ||
-                    ""
-                  )
-                    .trim()
-                    .toLowerCase()
+              const customerEmail = String(
+                customer.Email ||
+                customer.email ||
+                ""
+              )
+                .trim()
+                .toLowerCase()
 
-                return (
-                  (
-                    patronID === null ||
-                    patronID ===
-                      undefined ||
-                    patronID === ""
-                  ) &&
-                  customerEmail ===
-                    normalizedEmail
-                )
-              }
-            )
+              const matchesUser =
+                Number(patronID) === numericUserID
+
+              const matchesOldCustomer =
+                (
+                  patronID === null ||
+                  patronID === undefined ||
+                  patronID === ""
+                ) &&
+                customerEmail === normalizedEmail
+
+              return matchesUser || matchesOldCustomer
+            })
             .sort(
               (a, b) =>
                 Number(
@@ -1461,7 +1468,7 @@ app.post(
               },
 
               body: JSON.stringify({
-                PatronId: null,
+                PatronId: numericUserID,
 
                 Email:
                   email || "",
@@ -1590,56 +1597,35 @@ app.post(
           const matchingCustomers = (
             refreshedData.list || []
           )
-            .filter(
-              (customer) => {
-                const patronID =
-                  customer.PatronId ??
-                  customer.PatronID ??
-                  customer.patronId ??
-                  customer.patronID
+            .filter((customer) => {
+              const patronID =
+                customer.PatronId ??
+                customer.PatronID ??
+                customer.patronId ??
+                customer.patronID
 
-                const customerEmail =
-                  String(
-                    customer.Email ||
-                    customer.email ||
-                    ""
-                  )
-                    .trim()
-                    .toLowerCase()
+              const customerEmail = String(
+                customer.Email ||
+                customer.email ||
+                ""
+              )
+                .trim()
+                .toLowerCase()
 
-                return (
-                  (
-                    patronID === null ||
-                    patronID ===
-                      undefined ||
-                    patronID === ""
-                  ) &&
-                  String(
-                    customer
-                      .StreetAddress ||
-                    ""
-                  ) ===
-                    String(
-                      streetAddress
-                    ) &&
-                  String(
-                    customer.PostCode ||
-                    ""
-                  ) ===
-                    String(postCode) &&
-                  String(
-                    customer.Suburb ||
-                    ""
-                  ) ===
-                    String(suburb) &&
-                  (
-                    !normalizedEmail ||
-                    customerEmail ===
-                      normalizedEmail
-                  )
+              return (
+                Number(patronID) === numericUserID &&
+                String(customer.StreetAddress || "") ===
+                  String(streetAddress) &&
+                String(customer.PostCode || "") ===
+                  String(postCode) &&
+                String(customer.Suburb || "") ===
+                  String(suburb) &&
+                (
+                  !normalizedEmail ||
+                  customerEmail === normalizedEmail
                 )
-              }
-            )
+              )
+            })
             .sort(
               (a, b) =>
                 Number(
@@ -1696,6 +1682,7 @@ app.post(
               Cookie: setCookie
             },
             body: JSON.stringify({
+              PatronId: numericUserID,
               Email: email || "",
               PhoneNumber: phoneNumber || "",
               StreetAddress: streetAddress,
