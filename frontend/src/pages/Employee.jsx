@@ -10,6 +10,7 @@ function Employee() {
   const [products, setProducts] = useState([])
   const [search, setSearch] = useState("")
   const [activeSection, setActiveSection] = useState("users")
+  const [orderItemCounts, setOrderItemCounts] = useState({})
 
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [editProfile, setEditProfile] = useState({ name: "", email: "" })
@@ -105,9 +106,58 @@ function Employee() {
       const nonAdminUsers = allUsers.filter((user) => !user.IsAdmin)
       setUsers(nonAdminUsers)
 
-      const ordersResponse = await fetch("/api/inft3050/Orders?limit=1000")
-      const ordersData = await ordersResponse.json()
-      setOrders(ordersData.list || [])
+      const ordersResponse = await fetch(
+        "/api/inft3050/Orders?limit=1000"
+      )
+
+      const ordersData =
+        await ordersResponse.json()
+
+      const orderList =
+        ordersData.list || []
+
+      setOrders(orderList)
+
+      const counts = {}
+
+      await Promise.all(
+        orderList.map(async (order) => {
+          const orderID =
+            order.OrderID ||
+            order.OrderId ||
+            order.orderID
+
+          if (!orderID) {
+            return
+          }
+
+          try {
+            const response = await fetch(
+              `http://localhost:5050/api-order-items/${orderID}`
+            )
+
+            if (!response.ok) {
+              counts[orderID] = 0
+              return
+            }
+
+            const data =
+              await response.json()
+
+            counts[orderID] =
+              Number(data.totalItems || 0)
+          } catch (error) {
+            console.error(
+              `Load items for order ${orderID} failed:`,
+              error
+            )
+
+            counts[orderID] = 0
+          }
+        })
+      )
+
+      setOrderItemCounts(counts)
 
       const [
         productResponse,
@@ -358,16 +408,38 @@ function Employee() {
     ])
   )
 
-  const filteredOrders = orders.filter((order) =>
-    matchesSearch([
-      order.OrderID,
-      order.Customer,
+  const filteredOrders = orders.filter((order) => {
+    const orderID =
+      order.OrderID ||
+      order.OrderId ||
+      order.orderID
+
+    const customerID =
+      order.Customer ||
+      order.customer ||
+      order.CustomerID ||
+      order.CustomerId
+
+    const itemCount =
+      orderItemCounts[orderID] ??
+      order["ProductsInOrders List"]?.reduce(
+        (total, item) =>
+          total + Number(item.Quantity || 1),
+        0
+      ) ??
+      0
+
+    return matchesSearch([
+      orderID,
+      customerID,
       order.StreetAddress,
       order.Suburb,
       order.State,
-      order.PostCode
+      order.PostCode,
+      itemCount,
+      `${itemCount} items`
     ])
-  )
+  })
 
   const filteredProducts = products.filter((product) =>
     matchesSearch([
@@ -581,7 +653,21 @@ function Employee() {
                   <span>{safeText(order.Suburb)}</span>
                   <span>{safeText(order.State)}</span>
                   <span>{safeText(order.PostCode)}</span>
-                  <span>{order["ProductsInOrders List"]?.length || 0}</span>
+                  <span>
+                    {
+                      orderItemCounts[
+                        order.OrderID ||
+                        order.OrderId ||
+                        order.orderID
+                      ] ??
+                      order["ProductsInOrders List"]?.reduce(
+                        (total, item) =>
+                          total + Number(item.Quantity || 1),
+                        0
+                      ) ??
+                      0
+                    }
+                  </span>
                 </div>
               ))
             ) : (
