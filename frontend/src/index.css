@@ -3738,3 +3738,24 @@ body {
 .order-success-card h1 {
   color: #000 !important;
 }
+
+.cart-top-buttons,
+.cart-bottom-buttons {
+  display: flex;
+  justify-content: center;
+}
+
+.blue-checkout-btn {
+  width: 100%;
+  max-width: 640px;
+}
+
+.checkout-form-card input {
+  color: #111;
+  font-weight: 500;
+}
+
+.checkout-form-card input::placeholder {
+  color: #bdbdbd;
+  font-weight: 400;
+}

@@ -28,7 +28,49 @@ function Checkout() {
     setCartItems(cart)
   }, [navigate])
 
-  const handleChange = (e) => setFormData((current) => ({ ...current, [e.target.name]: e.target.value }))
+  const handleChange = (e) => {
+    const { name, value } = e.target
+
+    let formattedValue = value
+
+    if (name === "cardNumber") {
+      const digitsOnly = value
+        .replace(/\D/g, "")
+        .slice(0, 16)
+
+      formattedValue = digitsOnly
+        .replace(/(\d{4})(?=\d)/g, "$1 ")
+    }
+
+    if (name === "expiry") {
+      const digitsOnly = value
+        .replace(/\D/g, "")
+        .slice(0, 4)
+
+      if (digitsOnly.length <= 2) {
+        formattedValue = digitsOnly
+      } else {
+        formattedValue = `${digitsOnly.slice(0, 2)}/${digitsOnly.slice(2)}`
+      }
+    }
+
+    if (name === "cvv") {
+      formattedValue = value
+        .replace(/\D/g, "")
+        .slice(0, 3)
+    }
+
+    if (name === "postCode") {
+      formattedValue = value
+        .replace(/\D/g, "")
+        .slice(0, 4)
+    }
+
+    setFormData((current) => ({
+      ...current,
+      [name]: formattedValue
+    }))
+  }
   const getItemPrice = (item) => Number(item.price || item.Price || 0)
   const totalItems = cartItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
   const totalPrice = cartItems.reduce((sum, item) => sum + getItemPrice(item) * Number(item.quantity || 0), 0)
@@ -71,16 +113,39 @@ if (invalidItem) {
 
 const cardDigits = formData.cardNumber.replace(/\D/g, "")
 
-if (cardDigits.length < 13 || cardDigits.length > 19) {
-  return setMessage("Enter a valid card number.")
+if (cardDigits.length !== 16) {
+  return setMessage(
+    "Card number must contain exactly 16 digits."
+  )
 }
 
-if (!/^\d{2}\/\d{2}$/.test(formData.expiry)) {
-  return setMessage("Expiry must use MM/YY.")
+const expiryMatch =
+  formData.expiry.match(
+    /^(\d{2})\/(\d{2})$/
+  )
+
+if (!expiryMatch) {
+  return setMessage(
+    "Expiry must use MM/YY."
+  )
 }
 
-if (!/^\d{3,4}$/.test(formData.cvv)) {
-  return setMessage("Enter a valid CVV.")
+const expiryMonth =
+  Number(expiryMatch[1])
+
+if (
+  expiryMonth < 1 ||
+  expiryMonth > 12
+) {
+  return setMessage(
+    "Expiry month must be between 01 and 12."
+  )
+}
+
+if (!/^\d{3}$/.test(formData.cvv)) {
+  return setMessage(
+    "CVV must contain exactly 3 digits."
+  )
 }
 
 const maskedCardNumber = `**** **** **** ${cardDigits.slice(-4)}`
@@ -149,14 +214,41 @@ setIsSubmitting(true)
           <input name="cardOwner" value={formData.cardOwner} onChange={handleChange} placeholder="Name on card" autoComplete="cc-name" required />
 
           <label>Card Number</label>
-          <input name="cardNumber" value={formData.cardNumber} onChange={handleChange} placeholder="1234 5678 9012 3456" inputMode="numeric" autoComplete="cc-number" maxLength="19" required />
+          <input
+            name="cardNumber"
+            value={formData.cardNumber}
+            onChange={handleChange}
+            placeholder="1234 5678 9012 3456"
+            inputMode="numeric"
+            autoComplete="cc-number"
+            maxLength="19"
+            required
+          />
 
           <label>Expiry</label>
-          <input name="expiry" value={formData.expiry} onChange={handleChange} placeholder="MM/YY" autoComplete="cc-exp" maxLength="5" required />
+          <input
+            name="expiry"
+            value={formData.expiry}
+            onChange={handleChange}
+            placeholder="MM/YY"
+            inputMode="numeric"
+            autoComplete="cc-exp"
+            maxLength="5"
+            required
+          />
 
           <label>CVV</label>
-          <input name="cvv" value={formData.cvv} onChange={handleChange} placeholder="123" type="password" inputMode="numeric" autoComplete="cc-csc" maxLength="4" required />
-
+          <input
+            name="cvv"
+            value={formData.cvv}
+            onChange={handleChange}
+            placeholder="123"
+            type="password"
+            inputMode="numeric"
+            autoComplete="cc-csc"
+            maxLength="3"
+            required
+          />
           <button type="submit" className="checkout-place-order-btn" disabled={isSubmitting}>{isSubmitting ? "Saving Order..." : "Place Order"}</button>
           {message && <p className="checkout-message">{message}</p>}
         </form>

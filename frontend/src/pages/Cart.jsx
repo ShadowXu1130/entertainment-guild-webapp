@@ -84,10 +84,6 @@ function Cart() {
       <p className="cart-subtitle">Get free delivery on all products.</p>
 
       <div className="cart-top-buttons">
-        <button className="apple-pay-btn" onClick={handleCheckout}>
-          Check Out with Apple Pay
-        </button>
-
         <button className="blue-checkout-btn" onClick={handleCheckout}>
           Check Out
         </button>
@@ -192,10 +188,6 @@ function Cart() {
             <p>Includes GST where applicable.</p>
 
             <div className="cart-bottom-buttons">
-              <button className="apple-pay-btn" onClick={handleCheckout}>
-                Check Out with Apple Pay
-              </button>
-
               <button className="blue-checkout-btn" onClick={handleCheckout}>
                 Check Out
               </button>
