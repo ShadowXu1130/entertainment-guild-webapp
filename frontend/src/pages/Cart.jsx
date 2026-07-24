@@ -1,18 +1,34 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 
+/**
+ * Shopping cart page for reviewing selected products before checkout.
+ *
+ * The cart is persisted in localStorage so items remain available across
+ * browser refreshes. Checkout is restricted to authenticated customer
+ * accounts before navigating to the payment workflow.
+ */
 function Cart() {
   const navigate = useNavigate()
   const [cartItems, setCartItems] = useState([])
   const [openDetails, setOpenDetails] = useState({})
   const [paymentStatus, setPaymentStatus] = useState("")
 
-  useEffect(() => {
+  /**
+ * Restores the shopping cart from localStorage when the page is loaded.
+ * This allows customers to continue shopping without losing their
+ * previously selected items.
+ */
+useEffect(() => {
     const cart = JSON.parse(localStorage.getItem("cart")) || []
     setCartItems(cart)
   }, [])
 
-  const updateQuantity = (id, change) => {
+  /**
+ * Updates the quantity of one cart item while preventing values
+ * below one. Changes are immediately synchronized with localStorage.
+ */
+const updateQuantity = (id, change) => {
     const updatedCart = cartItems.map((item) => {
       if (item.ID === id) {
         return {
@@ -28,7 +44,11 @@ function Cart() {
     localStorage.setItem("cart", JSON.stringify(updatedCart))
   }
 
-  const removeItem = (id) => {
+  /**
+ * Removes the selected product from both the component state and
+ * persistent localStorage.
+ */
+const removeItem = (id) => {
     const updatedCart = cartItems.filter((item) => item.ID !== id)
 
     setCartItems(updatedCart)
@@ -42,7 +62,14 @@ function Cart() {
     })
   }
 
-  const handleCheckout = () => {
+  /**
+ * Validates the cart before checkout.
+ *
+ * Customers must have at least one product, be logged in and use a
+ * customer account. Successful validation redirects the user to the
+ * checkout page where payment is completed.
+ */
+const handleCheckout = () => {
     if (cartItems.length === 0) {
       setPaymentStatus("empty")
       return
@@ -64,10 +91,15 @@ function Cart() {
     navigate("/checkout")
   }
 
-  const getItemPrice = (item) => {
+  /**
+ * Normalizes product price values because products originating from
+ * different API responses may expose either "price" or "Price".
+ */
+const getItemPrice = (item) => {
     return Number(item.price || item.Price || 0)
   }
 
+  
   const totalItems = cartItems.reduce(
     (sum, item) => sum + item.quantity,
     0
@@ -78,7 +110,11 @@ function Cart() {
     0
   )
 
-  return (
+// ======================================================
+// Cart interface rendering
+// ======================================================
+
+return (
     <div className="apple-cart-page">
       <h1>Your bag total is S${totalPrice.toFixed(2)}</h1>
       <p className="cart-subtitle">Get free delivery on all products.</p>

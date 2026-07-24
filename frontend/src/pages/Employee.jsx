@@ -1,8 +1,20 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
+/**
+ * Employee dashboard for reviewing customer accounts, existing orders
+ * and product inventory while allowing the signed-in employee to update
+ * their own profile.
+ *
+ * The component applies a client-side employee route guard, loads related
+ * API resources, combines product and stocktake data for display, and
+ * provides shared search across each dashboard section.
+ */
 function Employee() {
   const navigate = useNavigate()
+  // ======================================================
+  // State and configuration
+  // ======================================================
 
   const [profile, setProfile] = useState(null)
   const [users, setUsers] = useState([])
@@ -21,12 +33,25 @@ function Employee() {
   const storedName = localStorage.getItem("name") || username
   const storedEmail = localStorage.getItem("email") || "N/A"
 
+  // ======================================================
+  // Display and normalization helpers
+  // ======================================================
+
+  /**
+   * Removes role suffixes from names before they are displayed.
+   *
+   * The current database schema stores employee and administrator role
+   * markers inside the Name field, so they must be removed for the UI.
+   */
   const cleanName = (name) => {
     return String(name || "")
       .replace(/\s+employee$/i, "")
       .replace(/\s+admin$/i, "")
   }
 
+  /**
+   * Converts null, empty or nested API values into display-safe text.
+   */
   const safeText = (value) => {
     if (value === null || value === undefined || value === "") return "N/A"
 
@@ -37,12 +62,20 @@ function Employee() {
     return String(value)
   }
 
+  /**
+   * Performs a case-insensitive search across the values supplied by
+   * the currently active employee dashboard section.
+   */
   const matchesSearch = (values) => {
     return values.some((value) =>
       safeText(value).toLowerCase().includes(search.toLowerCase())
     )
   }
 
+  /**
+   * Resolves the employee identifier across the field-name variations
+   * returned by different API routes.
+   */
   const getProfileID = (profileData = profile) => {
     return (
       profileData?.UserID ||
@@ -54,6 +87,17 @@ function Employee() {
     )
   }
 
+  // ======================================================
+  // Authentication and data loading
+  // ======================================================
+
+  /**
+   * Applies the employee route guard when the page is mounted.
+   *
+   * Users without a stored login state are redirected to login, while
+   * accounts without the employee role are returned to the storefront.
+   * Backend authorization must still protect employee-only endpoints.
+   */
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true"
     const userType = localStorage.getItem("userType")
@@ -71,6 +115,15 @@ function Employee() {
     loadEmployeeData()
   }, [navigate])
 
+  /**
+   * Loads and combines all data required by the employee dashboard.
+   *
+   * The profile is resolved from both the dedicated profile endpoint and
+   * the full User collection to tolerate incomplete responses. Orders are
+   * loaded with their item totals, while product, genre, source and
+   * stocktake resources are requested together and transformed into one
+   * inventory-focused display model.
+   */
   const loadEmployeeData = async () => {
     try {
       let loadedProfile = null
@@ -119,6 +172,8 @@ function Employee() {
       setOrders(orderList)
 
       const counts = {}
+      // Resolve item totals concurrently so one failed order-item request
+      // does not prevent the rest of the dashboard from loading.
 
       await Promise.all(
         orderList.map(async (order) => {
@@ -159,6 +214,8 @@ function Employee() {
 
       setOrderItemCounts(counts)
 
+      // Load independent inventory resources in parallel to reduce the
+      // total time required to build the product tracking table.
       const [
         productResponse,
         genreResponse,
@@ -193,6 +250,10 @@ function Employee() {
       const movieGenres = movieGenreData.list || []
       const bookGenres = bookGenreData.list || []
 
+      /**
+       * Resolves a product's top-level genre from either its direct
+       * foreign key or the nested Product List relationship.
+       */
       const getGenreName = (product) => {
         const found = allGenres.find(
           (genre) => Number(genre.GenreID) === Number(product?.Genre)
@@ -213,6 +274,10 @@ function Employee() {
         return "N/A"
       }
 
+      /**
+       * Resolves a subgenre from the genre-specific lookup table used
+       * by books, movies or games.
+       */
       const getSubGenreName = (product, genreName) => {
         const subGenreID = Number(product?.SubGenre)
 
@@ -255,7 +320,9 @@ function Employee() {
           : "N/A"
       }
 
-      const trackedProducts = allStocktake.map((stock) => {
+      // Combine stocktake, product, genre and source records into one
+      // normalized structure used by the product tracking table.
+        const trackedProducts = allStocktake.map((stock) => {
         const productID = stock.ProductId || stock.ProductID || stock.Productid
         const sourceID = stock.Sourceid || stock.SourceId || stock.SourceID
 
@@ -294,6 +361,14 @@ function Employee() {
     setSearch("")
   }
 
+  // ======================================================
+  // Employee profile management
+  // ======================================================
+
+  /**
+   * Opens the profile editor using the latest API values, with
+   * localStorage values retained as a fallback.
+   */
   const startEditProfile = () => {
     setProfileMessage("")
     setEditProfile({
@@ -308,6 +383,13 @@ function Employee() {
     setProfileMessage("")
   }
 
+  /**
+   * Attempts the supported user update route and method combinations.
+   *
+   * The fallback sequence exists because the generated course API may
+   * expose different record-update URL patterns depending on configuration.
+   * The first successful response is returned to the caller.
+   */
   const updateUserRequest = async (userID, payload) => {
     const urls = [
       `/api/inft3050/User/${userID}`,
@@ -340,6 +422,12 @@ function Employee() {
     throw new Error(lastError)
   }
 
+    /**
+   * Validates and saves the employee's editable profile fields.
+   *
+   * After a successful update, component state and localStorage are
+   * synchronized so the dashboard immediately displays the new values.
+   */
   const saveProfile = async (event) => {
     event.preventDefault()
 
@@ -398,6 +486,13 @@ function Employee() {
   const displayName = cleanName(profile?.Name || storedName)
   const displayEmail = profile?.Email || storedEmail || "N/A"
 
+
+  // ======================================================
+  // Filtering and derived display data
+  // ======================================================
+
+  // Each section applies the shared search helper to the fields visible
+  // in its own table.
   const filteredUsers = users.filter((user) =>
     matchesSearch([
       user.UserID,
@@ -453,6 +548,10 @@ function Employee() {
       product.price
     ])
   )
+
+  // ======================================================
+  // Employee dashboard rendering
+  // ======================================================
 
   return (
     <div className="employee-page">

@@ -1,16 +1,35 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-function Admin() {
-  const navigate = useNavigate()
+/**
+ * Admin dashboard for managing users, products, stocktake records
+ * and customer orders.
+ *
+ * The component performs four main responsibilities:
+ * 1. Verifies that the current session belongs to an administrator.
+ * 2. Loads administrative data from the protected backend API.
+ * 3. Provides searchable and paginated management tables.
+ * 4. Sends create, update and delete requests through the Express backend.
+ *
+ * Direct write operations are not sent from React to the data service.
+ * They are routed through the Express server so authentication,
+ * validation and file handling remain on the server side.
+ */
 
-  const [products, setProducts] = useState([])
-  const [users, setUsers] = useState([])
-  const [stocktake, setStocktake] = useState([])
-  const [orders, setOrders] = useState([])
-  const [sources, setSources] = useState([])
-  const [activeTab, setActiveTab] = useState("users")
-  const [search, setSearch] = useState("")
+function Admin() {
+const navigate = useNavigate()
+// Core datasets displayed in the administration dashboard.
+// Each collection is loaded independently because the generated API
+// exposes products, users, stocktake, sources and orders as separate resources.
+const [products, setProducts] = useState([])
+const [users, setUsers] = useState([])
+const [stocktake, setStocktake] = useState([])
+const [orders, setOrders] = useState([])
+const [sources, setSources] = useState([])
+const [activeTab, setActiveTab] = useState("users")
+const [search, setSearch] = useState("")
+// Modal state is separated by entity type to prevent product,
+// user and stocktake editing workflows from interfering with one another.
 const [showEditModal, setShowEditModal] = useState(false)
 const [editingProduct, setEditingProduct] = useState(null)
 const [showUserModal, setShowUserModal] = useState(false)
@@ -21,6 +40,9 @@ const [genres, setGenres] = useState([])
 const [gameGenres, setGameGenres] = useState([])
 const [movieGenres, setMovieGenres] = useState([])
 const [bookGenres, setBookGenres] = useState([])
+// Pagination is managed independently for each tab.
+// Switching tabs resets all page indexes to prevent an invalid page
+// number from being retained after filtering or changing sections.
 const [productPage, setProductPage] = useState(1)
 const productsPerPage = 25
 const [stockPage, setStockPage] = useState(1)
@@ -61,7 +83,14 @@ const [newStaff, setNewStaff] = useState({
 
 const [staffMessage, setStaffMessage] = useState("")
 
-  const safeText = (value) => {
+/**
+ * Converts uncertain API values into display-safe text.
+ *
+ * The generated database API may return null values or nested relationship
+ * objects instead of primitive strings. This helper prevents React from
+ * rendering [object Object] and provides a consistent fallback value.
+ */
+const safeText = (value) => {
     if (value === null || value === undefined || value === "") return "N/A"
 
     if (typeof value === "object") {
@@ -77,7 +106,14 @@ const [staffMessage, setStaffMessage] = useState("")
       .replace(/\s+admin$/i, "")
   }
 
-  const getUserRole = (user) => {
+  /**
+ * Determines the application role represented by a User record.
+ *
+ * Administrator status is stored in IsAdmin. Employee status is encoded
+ * in the user's display name because the supplied course schema does not
+ * provide a dedicated employee-role column.
+ */
+const getUserRole = (user) => {
     if (user.IsAdmin) return "Admin"
 
     if (safeText(user.Name).toLowerCase().endsWith(" employee")) {
@@ -87,7 +123,14 @@ const [staffMessage, setStaffMessage] = useState("")
     return "Customer"
   }
 
-  useEffect(() => {
+  /**
+ * Protects the admin route on initial render.
+ *
+ * Users without an active session are redirected to the login page,
+ * while authenticated non-administrators are returned to the storefront.
+ * Data is loaded only after both checks succeed.
+ */
+useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn")
     const isAdmin = localStorage.getItem("isAdmin") === "true"
 
@@ -105,6 +148,17 @@ const [staffMessage, setStaffMessage] = useState("")
   }, [navigate])
 
 
+/**
+ * Reloads all datasets required by the dashboard.
+ *
+ * Independent API requests are started without blocking one another.
+ * Orders require an additional backend request per order because item
+ * quantities are stored in the ProductsInOrders relationship rather
+ * than directly inside the Orders record.
+ *
+ * This function is reused after successful create, update and delete
+ * operations so the interface remains synchronized with the database.
+ */
 const loadAdminData = async () => {
   fetch("/api/inft3050/Product?limit=1000")
     .then((res) => res.json())
@@ -140,6 +194,10 @@ const loadAdminData = async () => {
     setOrders(orderList)
 
     const counts = {}
+
+// Resolve order-item totals concurrently.
+// A failed item-count request is isolated to its own order and falls
+// back to zero so one malformed order does not block the full dashboard.
 
     await Promise.all(
       orderList.map(async (order) => {
@@ -261,7 +319,14 @@ const getSourceNameByID = (sourceID) => {
 
 
 
-  const matchesSearch = (values) => {
+  /**
+ * Performs a case-insensitive search across multiple possible fields.
+ *
+ * Each table supplies the fields relevant to its own entity, allowing
+ * one shared search box to support IDs, names, roles, addresses,
+ * prices and other displayed values.
+ */
+const matchesSearch = (values) => {
   const searchText = search.trim().toLowerCase()
 
   if (!searchText) {
@@ -275,6 +340,10 @@ const getSourceNameByID = (sourceID) => {
       .includes(searchText)
   )
 }
+
+// Filtering is performed before sorting and pagination.
+// This ordering ensures page counts represent only the current search
+// result instead of the complete unfiltered dataset.
 
   const filteredProducts = products.filter((product) =>
     matchesSearch([
@@ -438,6 +507,13 @@ const paginatedOrders = sortedOrders.slice(
   orderPage * ordersPerPage
 )
 
+/**
+ * Validates a selected product image before it is uploaded.
+ *
+ * Validation is repeated on the backend because browser-side checks
+ * improve usability but cannot be trusted as a security boundary.
+ * Object URLs are revoked when replaced to avoid unnecessary memory use.
+ */
 const handleProductImageChange = (event) => {
   const file = event.target.files?.[0]
 
@@ -477,6 +553,13 @@ setNewProductImage(file)
 setNewProductImagePreview(URL.createObjectURL(file))
 }
 
+/**
+ * Creates a new product using multipart/form-data.
+ *
+ * Product metadata and the selected image are submitted together so the
+ * backend can create the database record, obtain the generated product ID
+ * and save the image using that ID as the filename.
+ */
 const handleAddProduct = async (e) => {
   e.preventDefault()
 
@@ -622,6 +705,13 @@ const handleUpdateProduct = async () => {
   }
 }
 
+/**
+ * Creates employee or administrator accounts.
+ *
+ * All accounts are first created through the registration endpoint,
+ * which generates the password salt and hash on the server. Administrator
+ * accounts then receive a second update that enables IsAdmin.
+ */
 const handleCreateStaffAccount = async (e) => {
   e.preventDefault()
   setStaffMessage("")
@@ -749,6 +839,13 @@ const handleEditUser = (user) => {
   setShowUserModal(true)
 }
 
+/**
+ * Converts the interface role selection back into the database format.
+ *
+ * Employee and administrator markers are appended to the stored name
+ * to remain compatible with the existing course database structure,
+ * while IsAdmin remains the authoritative administrator flag.
+ */
 const handleUpdateUser = async () => {
   const cleanName = getDisplayName(editingUser.Name).trim()
   let storedName = cleanName
@@ -897,6 +994,13 @@ const handleDeleteStock = async (itemID) => {
   }
 }
 
+/**
+ * Creates an inventory record for one product-source combination.
+ *
+ * A product may be supplied by several sources, but the same source and
+ * product pair should not be inserted twice. Quantity and price should
+ * instead be edited on the existing stocktake record.
+ */
 const handleAddStock = async (e) => {
   e.preventDefault()
 
@@ -954,6 +1058,13 @@ const getGenreIDByName = (genreName) => {
   return found ? found.GenreID : null
 }
 
+/**
+ * Resolves a product's top-level genre.
+ *
+ * The function first uses the direct Genre foreign key. If the generated
+ * API omits that value, it falls back to searching the nested Product List
+ * returned by the Genre endpoint.
+ */
 const getProductGenreName = (
   productID,
   productGenreID = null
@@ -1009,6 +1120,12 @@ const getProductGenreName = (
   return "N/A"
 }
 
+/**
+ * Resolves the subgenre name from the appropriate genre-specific table.
+ *
+ * Books, movies and games use separate subgenre resources, so the parent
+ * genre must be identified before the SubGenreID can be translated.
+ */
 
 const getSubGenreName = (product) => {
   const genreName = getProductGenreName(
@@ -1054,6 +1171,10 @@ const getSubGenreName = (product) => {
 
 
 
+/**
+ * Changes the active administration section and resets transient table
+ * state so searches and page numbers do not leak between unrelated tabs.
+ */
 const changeTab = (tab) => {
   setActiveTab(tab)
   setSearch("")

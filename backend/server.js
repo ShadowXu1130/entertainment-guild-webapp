@@ -1,3 +1,13 @@
+/**
+ * Entertainment Guild backend server.
+ *
+ * This Express application provides the REST API used by the
+ * Entertainment Guild web application. It acts as a middleware
+ * layer between the React frontend and the NocoDB backend while
+ * managing authentication, customer profiles, products, orders,
+ * stock updates and image uploads.
+ */
+
 const express = require("express")
 const cors = require("cors")
 const crypto = require("crypto")
@@ -7,6 +17,10 @@ const app = express()
 const path = require("path")
 const fs = require("fs")
 const multer = require("multer")
+
+// ======================================================
+// Configuration
+// ======================================================
 
 const customerMapPath = path.join(
   __dirname,
@@ -18,6 +32,13 @@ const orderItemsMapPath = path.join(
   "order-items-map.json"
 )
 
+// ======================================================
+// Local persistence helpers
+// ======================================================
+
+/**
+ * Loads locally stored order summaries from disk.
+ */
 const loadOrderItemsMap = () => {
   try {
     if (!fs.existsSync(orderItemsMapPath)) {
@@ -50,6 +71,9 @@ const loadOrderItemsMap = () => {
   }
 }
 
+/**
+ * Persists generated order summaries for later retrieval.
+ */
 const saveOrderItemsMap = (
   orderItemsMap
 ) => {
@@ -65,6 +89,10 @@ const saveOrderItemsMap = (
 }
 
 
+/**
+ * Loads the mapping between authenticated users and
+ * customer records.
+ */
 const loadCustomerMap = () => {
   try {
     if (!fs.existsSync(customerMapPath)) {
@@ -97,6 +125,9 @@ const loadCustomerMap = () => {
   }
 }
 
+/**
+ * Saves the current user-to-customer mapping.
+ */
 const saveCustomerMap = (
   customerMap
 ) => {
@@ -120,6 +151,10 @@ const saveCustomerMap = (
   }
 }
 
+// ======================================================
+// Middleware
+// ======================================================
+
 app.use(cors())
 app.use(express.json())
 
@@ -136,6 +171,10 @@ if (!fs.existsSync(tempUploadDirectory)) {
     }
   )
 }
+
+// ======================================================
+// File upload configuration
+// ======================================================
 
 const upload = multer({
   dest: tempUploadDirectory,
@@ -192,6 +231,14 @@ app.get("/api/products", (req, res) => {
   ])
 })
 
+// ======================================================
+// Authentication
+// ======================================================
+
+/**
+ * Authenticates against the NocoDB backend and retrieves an
+ * administrator session cookie for subsequent API requests.
+ */
 const getAdminCookie = async () => {
   const loginResponse = await fetch(
     "http://localhost:3001/login?adminAccount=adminPW",
@@ -220,6 +267,10 @@ const getAdminCookie = async () => {
     "set-cookie"
   )
 }
+
+// ======================================================
+// Authentication routes
+// ======================================================
 
 app.post(
   "/api-register",
@@ -318,6 +369,11 @@ app.post(
     }
   }
 )
+
+// ======================================================
+// Product management
+// ======================================================
+
 app.post(
   "/api-add-product",
   upload.single("Image"),
@@ -774,6 +830,11 @@ app.delete(
     }
   }
 )
+
+// ======================================================
+// User management
+// ======================================================
+
 app.patch(
   "/api-edit-user/:id",
   async (req, res) => {
@@ -870,6 +931,11 @@ app.delete(
     }
   }
 )
+
+// ======================================================
+// Stock management
+// ======================================================
+
 app.patch(
   "/api-edit-stocktake/:id",
   async (req, res) => {
@@ -1048,6 +1114,11 @@ app.delete(
     }
   }
 )
+
+// ======================================================
+// Customer management
+// ======================================================
+
 app.post(
   "/api-create-customer",
   async (req, res) => {
@@ -1239,6 +1310,10 @@ app.patch(
   }
 )
 
+// ======================================================
+// Profile services
+// ======================================================
+
 app.get(
   "/api-profile-user/:username",
   async (req, res) => {
@@ -1301,6 +1376,18 @@ app.get(
     }
   }
 )
+
+// ======================================================
+// Order processing
+// ======================================================
+
+/**
+ * Creates a customer order and updates all related resources.
+ *
+ * The workflow validates customer information, creates or updates
+ * customer records, generates the order, updates stock quantities
+ * and stores a local order summary for later retrieval.
+ */
 app.post(
   "/api-create-order",
   async (req, res) => {

@@ -1,82 +1,406 @@
-import { useEffect, useState } from "react"
+import {
+  useEffect,
+  useRef,
+  useState
+} from "react"
 import { Link } from "react-router-dom"
 import ProductImage from "../components/ProductImage"
 
-function Games() {
-  const [groupedGames, setGroupedGames] = useState({})
-  const [search, setSearch] = useState("")
+/**
+ * Horizontally scrollable row used to display one game subgenre.
+ *
+ * The component manages its own scrolling state so each row can
+ * independently enable or disable its navigation controls.
+ */
+function GameRow({
+  title,
+  items
+}) {
+  const rowRef = useRef(null)
 
+  const [canScrollLeft, setCanScrollLeft] =
+    useState(false)
+
+  const [canScrollRight, setCanScrollRight] =
+    useState(false)
+
+/**
+ * Updates the enabled state of the horizontal navigation buttons
+ * based on the current scroll position.
+ */
+const updateScrollButtons = () => {
+    const rowElement = rowRef.current
+
+    if (!rowElement) {
+      return
+    }
+
+    const {
+      scrollLeft,
+      scrollWidth,
+      clientWidth
+    } = rowElement
+
+    setCanScrollLeft(
+      scrollLeft > 5
+    )
+
+    setCanScrollRight(
+      scrollLeft + clientWidth <
+        scrollWidth - 5
+    )
+  }
+
+/**
+ * Registers scroll and resize listeners so navigation buttons
+ * always reflect the current scrollable area.
+ */
   useEffect(() => {
-    Promise.all([
-      fetch(
-        "http://localhost:3001/api/inft3050/Product?limit=1000"
-      ).then((res) => res.json()),
+    const rowElement = rowRef.current
 
-      fetch(
-        "http://localhost:3001/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000"
-      ).then((res) => res.json()),
+    if (!rowElement) {
+      return undefined
+    }
 
-      fetch(
-        "http://localhost:3001/api/inft3050/GameGenre?limit=1000"
-      ).then((res) => res.json())
-    ])
-      .then(([productData, genreData, gameGenreData]) => {
-        const gamesGenre = (genreData.list || []).find(
-          (genre) => Number(genre.GenreID) === 3
-        )
+    updateScrollButtons()
+
+    const handleResize = () => {
+      updateScrollButtons()
+    }
+
+    rowElement.addEventListener(
+      "scroll",
+      updateScrollButtons
+    )
+
+    window.addEventListener(
+      "resize",
+      handleResize
+    )
+
+    return () => {
+      rowElement.removeEventListener(
+        "scroll",
+        updateScrollButtons
+      )
+
+      window.removeEventListener(
+        "resize",
+        handleResize
+      )
+    }
+  }, [items])
+
+  /**
+ * Smoothly scrolls the current game row by approximately one
+ * viewport width to improve horizontal browsing.
+ */
+  const scrollRow = (
+    direction
+  ) => {
+    const rowElement = rowRef.current
+
+    if (!rowElement) {
+      return
+    }
+
+    const scrollDistance =
+      Math.max(
+        rowElement.clientWidth *
+          0.8,
+        320
+      )
+
+    rowElement.scrollBy({
+      left:
+        direction === "left"
+          ? -scrollDistance
+          : scrollDistance,
+      behavior: "smooth"
+    })
+  }
+
+  return (
+    <section
+      className="book-row-section"
+    >
+      <div className="product-row-header">
+        <h2>{title}</h2>
+
+        <div className="product-scroll-controls">
+          <button
+            type="button"
+            className="product-scroll-button"
+            onClick={() =>
+              scrollRow("left")
+            }
+            disabled={
+              !canScrollLeft
+            }
+            aria-label={`Scroll ${title} left`}
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            className="product-scroll-button"
+            onClick={() =>
+              scrollRow("right")
+            }
+            disabled={
+              !canScrollRight
+            }
+            aria-label={`Scroll ${title} right`}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={rowRef}
+        className="book-horizontal-row"
+      >
+        {items.map((game) => (
+          <Link
+            key={game.ID}
+            to={`/products/${game.ID}`}
+            className="apple-book-card"
+          >
+            <ProductImage
+              productID={game.ID}
+              alt={
+                game.Name ||
+                "Game image"
+              }
+              className="product-cover"
+            />
+
+            <h3>
+              {game.Name ||
+                "Unnamed Game"}
+            </h3>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Displays all games grouped by subgenre.
+ *
+ * Product, genre and game-subgenre resources are loaded from the
+ * backend and combined into grouped collections that support
+ * searching and horizontal browsing.
+ */
+function Games() {
+  const [groupedGames, setGroupedGames] =
+    useState({})
+
+  const [search, setSearch] =
+    useState("")
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [loadError, setLoadError] =
+    useState("")
+
+  // ======================================================
+  // Data loading
+  // ======================================================
+
+  /**
+   * Loads product, genre and game-subgenre data, then combines
+   * them into grouped collections for display.
+   */
+    useEffect(() => {
+    const loadGames = async () => {
+      try {
+        setIsLoading(true)
+        setLoadError("")
+
+        // Independent API resources are requested in parallel to
+        // reduce loading time before grouping the game catalogue.
+        const [
+          productResponse,
+          genreResponse,
+          gameGenreResponse
+        ] = await Promise.all([
+          fetch(
+            "http://localhost:3001/api/inft3050/Product?limit=1000"
+          ),
+
+          fetch(
+            "http://localhost:3001/api/inft3050/Genre?limit=1000&nested[Product List][limit]=1000"
+          ),
+
+          fetch(
+            "http://localhost:3001/api/inft3050/GameGenre?limit=1000"
+          )
+        ])
+
+        if (
+          !productResponse.ok ||
+          !genreResponse.ok ||
+          !gameGenreResponse.ok
+        ) {
+          throw new Error(
+            "Failed to load games"
+          )
+        }
+
+        const [
+          productData,
+          genreData,
+          gameGenreData
+        ] = await Promise.all([
+          productResponse.json(),
+          genreResponse.json(),
+          gameGenreResponse.json()
+        ])
+
+        const gamesGenre =
+          (
+            genreData.list || []
+          ).find(
+            (genre) =>
+              Number(
+                genre.GenreID
+              ) === 3
+          )
 
         if (!gamesGenre) {
           setGroupedGames({})
           return
         }
 
-        const gameIds = (gamesGenre["Product List"] || []).map((game) =>
-          Number(game.ID)
-        )
-
-        const games = (productData.list || []).filter((product) =>
-          gameIds.includes(Number(product.ID))
-        )
-
-        const grouped = {}
-
-        ;(gameGenreData.list || []).forEach((subGenre) => {
-          const gamesInGenre = games.filter(
+        const gameIds =
+          (
+            gamesGenre[
+              "Product List"
+            ] || []
+          ).map(
             (game) =>
-              Number(game.SubGenre) === Number(subGenre.SubGenreID)
+              Number(game.ID)
           )
 
-          if (gamesInGenre.length > 0) {
-            grouped[subGenre.Name] = gamesInGenre
-          }
-        })
+        const games =
+          (
+            productData.list || []
+          ).filter(
+            (product) =>
+              gameIds.includes(
+                Number(
+                  product.ID
+                )
+              )
+          )
+        // Organize games into subgenre groups so each category
+        // can be rendered as an independent horizontal row.
+        const grouped = {}
 
-        console.log("All products:", productData.list?.length || 0)
-        console.log(
-          "Game Product List:",
-          gamesGenre["Product List"]?.length || 0
+        ;(
+          gameGenreData.list || []
+        ).forEach(
+          (subGenre) => {
+            const gamesInGenre =
+              games.filter(
+                (game) =>
+                  Number(
+                    game.SubGenre
+                  ) ===
+                  Number(
+                    subGenre.SubGenreID
+                  )
+              )
+
+            if (
+              gamesInGenre.length >
+              0
+            ) {
+              grouped[
+                subGenre.Name
+              ] =
+                gamesInGenre
+            }
+          }
         )
-        console.log("Filtered games:", games.length)
 
         setGroupedGames(grouped)
-      })
-      .catch((error) => {
-        console.error("Failed to load games:", error)
+      } catch (error) {
+        console.error(
+          "Failed to load games:",
+          error
+        )
+
         setGroupedGames({})
-      })
+        setLoadError(
+          "Games could not be loaded."
+        )
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadGames()
   }, [])
 
-  const filterGames = (games) => {
-    return games.filter((game) =>
-      String(game.Name || "")
+  /**
+ * Applies a case-insensitive search across game titles.
+ */
+  const filterGames = (
+    games
+  ) => {
+    const searchValue =
+      search
+        .trim()
         .toLowerCase()
-        .includes(search.toLowerCase())
+
+    if (!searchValue) {
+      return games
+    }
+
+    return games.filter(
+      (game) =>
+        String(
+          game.Name || ""
+        )
+          .toLowerCase()
+          .includes(
+            searchValue
+          )
     )
   }
 
-  const hasVisibleGames = Object.keys(groupedGames).some(
-    (subGenreName) => filterGames(groupedGames[subGenreName]).length > 0
-  )
+  const visibleGroups =
+    Object.entries(
+      groupedGames
+    )
+      .map(
+        ([
+          subGenreName,
+          games
+        ]) => ({
+          subGenreName,
+          games:
+            filterGames(games)
+        })
+      )
+      .filter(
+        (group) =>
+          group.games.length >
+          0
+      )
+
+  const hasVisibleGames =
+    visibleGroups.length > 0
+
+  // ======================================================
+  // Games page rendering
+  // ======================================================
 
   return (
     <div className="apple-books-page">
@@ -89,46 +413,54 @@ function Games() {
           type="text"
           placeholder="Search games..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(event) =>
+            setSearch(
+              event.target.value
+            )
+          }
           className="product-search"
         />
       </div>
 
-      {Object.keys(groupedGames).map((subGenreName) => {
-        const games = filterGames(groupedGames[subGenreName])
-
-        if (games.length === 0) {
-          return null
-        }
-
-        return (
-          <section className="book-row-section" key={subGenreName}>
-            <h2>{subGenreName}</h2>
-
-            <div className="book-horizontal-row">
-              {games.map((game) => (
-                <Link
-                  key={game.ID}
-                  to={`/products/${game.ID}`}
-                  className="apple-book-card"
-                >
-                  <ProductImage
-                    productID={game.ID}
-                    alt={game.Name}
-                    className="product-cover"
-                  />
-
-                  <h3>{game.Name}</h3>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )
-      })}
-
-      {!hasVisibleGames && (
-        <p className="profile-empty">No games found.</p>
+      {isLoading && (
+        <p className="profile-empty">
+          Loading games...
+        </p>
       )}
+
+      {!isLoading &&
+        loadError && (
+          <p className="profile-empty">
+            {loadError}
+          </p>
+        )}
+
+      {!isLoading &&
+        !loadError &&
+        visibleGroups.map(
+          ({
+            subGenreName,
+            games
+          }) => (
+            <GameRow
+              key={
+                subGenreName
+              }
+              title={
+                subGenreName
+              }
+              items={games}
+            />
+          )
+        )}
+
+      {!isLoading &&
+        !loadError &&
+        !hasVisibleGames && (
+          <p className="profile-empty">
+            No games found.
+          </p>
+        )}
     </div>
   )
 }

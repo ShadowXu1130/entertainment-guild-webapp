@@ -1,20 +1,50 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
+/**
+ * Login page supporting customer, employee and administrator accounts.
+ *
+ * User credentials are authenticated through the backend before the
+ * selected account type is verified. Successful login stores the
+ * required session information in localStorage and redirects the
+ * user to the appropriate application area.
+ */
 function Login() {
   const navigate = useNavigate()
-
+  // ======================================================
+  // State and configuration
+  // ======================================================
   const [userType, setUserType] = useState("customer")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState("")
 
+    // ======================================================
+  // Display helpers
+  // ======================================================
+
+  /**
+   * Removes role suffixes stored in employee and administrator names
+   * before they are displayed or saved locally.
+   */
   const cleanName = (name) => {
     return String(name || "")
       .replace(/\s+employee$/i, "")
       .replace(/\s+admin$/i, "")
   }
 
+    // ======================================================
+  // Authentication
+  // ======================================================
+
+  /**
+   * Authenticates the user through the backend and validates that the
+   * selected account type matches the returned user profile.
+   *
+   * After a successful login, the required session information is
+   * stored in localStorage before redirecting the user to the
+   * appropriate dashboard or storefront.
+   */
   const handleLogin = async (e) => {
     e.preventDefault()
     setMessage("")
@@ -37,7 +67,8 @@ function Login() {
       }
 
       const loginUser = await response.json()
-
+      // Retrieve the user's profile after authentication so role-specific
+      // information and display details can be loaded.
       const profileResponse = await fetch(
         `/api-profile-user/${loginUser.username}`
       )
@@ -48,7 +79,8 @@ function Login() {
       }
 
       const profileUser = await profileResponse.json()
-
+      // Determine the effective application role from the authenticated
+      // account before validating the user's selected login type.
       const isAdmin = loginUser.isAdmin === true
       const isEmployee =
         !isAdmin &&
@@ -91,6 +123,10 @@ function Login() {
       setMessage("Connection failed. Check browser console.")
     }
   }
+
+  // ======================================================
+  // Login page rendering
+  // ======================================================
 
   return (
     <div className="login-page">

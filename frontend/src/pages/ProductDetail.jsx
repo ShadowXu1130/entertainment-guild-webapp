@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 
+/**
+ * Product details page displaying complete product information and
+ * available purchase options.
+ *
+ * Product, genre, subgenre, stocktake and source data are combined
+ * into a unified view that allows customers to compare available
+ * purchase options before adding an item to the shopping cart.
+ */
 function ProductDetail() {
   const { id } = useParams()
-
+  // ======================================================
+  // State and configuration
+  // ======================================================
   const [product, setProduct] = useState(null)
   const [genreName, setGenreName] = useState("")
   const [subGenreName, setSubGenreName] = useState("")
@@ -22,6 +32,17 @@ function ProductDetail() {
     ".webp"
   ]
 
+  // ======================================================
+  // Product data loading
+  // ======================================================
+
+  /**
+   * Loads all resources required by the product details page.
+   *
+   * Product, genre, stocktake and source information are combined
+   * to resolve the product category and construct the list of
+   * available purchase options.
+   */
   useEffect(() => {
     let isMounted = true
 
@@ -50,6 +71,8 @@ function ProductDetail() {
 
         setProduct(productData)
 
+        // Independent resources are requested in parallel to reduce
+        // the overall loading time for the product details page.
         const [
           genreResponse,
           stocktakeResponse,
@@ -92,9 +115,9 @@ function ProductDetail() {
 
         if (!isMounted) return
 
-        // =========================================
-        // Genre
-        // =========================================
+// ======================================================
+// Resolve product genre and subgenre information
+// ======================================================
 
         let matchedGenre = null
 
@@ -189,10 +212,10 @@ function ProductDetail() {
           }
         }
 
-        // =========================================
-        // Purchase options
-        // Each Stocktake record = one purchase option
-        // =========================================
+// ======================================================
+// Build available purchase options
+// Each stocktake record represents one purchasing source.
+// ======================================================
 
         const matchedStocks = (
           stocktakeData.list || []
@@ -307,7 +330,11 @@ function ProductDetail() {
     }
   }, [id])
 
-  const handleImageError = (event) => {
+/**
+ * Attempts alternative image formats before falling back to the
+ * default placeholder image when the product image cannot be found.
+ */
+const handleImageError = (event) => {
     const nextIndex =
       imageExtensionIndex + 1
 
@@ -324,7 +351,15 @@ function ProductDetail() {
       "/Pictures/placeholder.jpeg"
   }
 
-  const addToCart = (selectedOption) => {
+/**
+ * Adds the selected purchase option to the shopping cart.
+ *
+ * Products from different sources are treated as separate cart items.
+ * Existing entries are updated rather than duplicated, while available
+ * stock limits prevent customers from adding quantities beyond the
+ * current inventory.
+ */
+const addToCart = (selectedOption) => {
     if (!product || !selectedOption) {
       return
     }
@@ -337,7 +372,8 @@ function ProductDetail() {
       )
       return
     }
-
+    // Restore the persisted shopping cart while safely handling
+    // missing or malformed localStorage data.
     let cart = []
 
     try {
@@ -360,6 +396,8 @@ function ProductDetail() {
       cart = []
     }
 
+    // Products are uniquely identified by the combination of product,
+    // stock item and purchasing source.
     const existingItem = cart.find(
       (item) =>
         Number(item.ID) ===
@@ -447,6 +485,8 @@ function ProductDetail() {
       })
     }
 
+    // Persist the updated cart so it remains available across
+    // page refreshes and future browsing sessions.    
     localStorage.setItem(
       "cart",
       JSON.stringify(cart)

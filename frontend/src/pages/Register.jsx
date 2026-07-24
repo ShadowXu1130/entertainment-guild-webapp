@@ -1,19 +1,38 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
+/**
+ * Customer registration page for creating a new application account.
+ *
+ * The form sends the user's account details to the backend registration
+ * endpoint and redirects to the login page after successful registration.
+ */
 function Register() {
   const navigate = useNavigate()
-
+  // ======================================================
+  // State and navigation
+  // ======================================================
   const [username, setUsername] = useState("")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState("")
 
+  // ======================================================
+  // Registration
+  // ======================================================
+
+  /**
+   * Submits the completed registration form to the backend.
+   *
+   * Backend validation errors are displayed to the user, while a
+   * successful registration redirects the customer to the login page.
+   */
   const handleRegister = async (e) => {
     e.preventDefault()
     setMessage("")
-
+      // Send the customer account details to the backend registration
+      // endpoint for validation and account creation.
     try {
       const response = await fetch("/api-register", {
         method: "POST",
@@ -29,7 +48,8 @@ function Register() {
       })
 
       const text = await response.text()
-
+      // Convert known backend duplicate-account errors into a clearer
+      // message for the registration form.
       if (!response.ok) {
         if (text.includes("duplicate")) {
           setMessage("Username already exists")
@@ -40,7 +60,8 @@ function Register() {
       }
 
       setMessage("Registration successful. Redirecting to login...")
-
+      // Briefly display the success message before returning the
+      // customer to the login page.
       setTimeout(() => {
         navigate("/login")
       }, 1000)
@@ -49,6 +70,10 @@ function Register() {
       setMessage("Connection failed. Check browser console.")
     }
   }
+
+  // ======================================================
+  // Registration page rendering
+  // ======================================================
 
   return (
     <div className="login-page">

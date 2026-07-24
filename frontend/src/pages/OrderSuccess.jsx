@@ -1,6 +1,14 @@
 import { Link, useLocation } from "react-router-dom"
 
+/**
+ * Order confirmation page displayed after a successful checkout.
+ *
+ * The page receives the order identifier and total amount through
+ * React Router navigation state and confirms that the order has
+ * been created successfully.
+ */
 function OrderSuccess() {
+    // Retrieve the order summary passed from the checkout page.
   const location = useLocation()
   const orderID = location.state?.orderID
   const total = Number(location.state?.total || 0)

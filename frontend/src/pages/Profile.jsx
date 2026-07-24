@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
+/**
+ * Customer profile page displaying account information, contact
+ * details, address, payment information and order history.
+ *
+ * User, customer and order data are combined from multiple backend
+ * resources while allowing selected profile information to be updated.
+ */
 function Profile() {
   const [user, setUser] = useState(null)
   const [customer, setCustomer] = useState(null)
@@ -27,10 +34,25 @@ function Profile() {
   const username = localStorage.getItem("username")
   const unavailableText = "Not available for this account"
 
+  // ======================================================
+  // Profile data loading
+  // ======================================================
+
+  /**
+   * Loads the current user's profile, customer record and order
+   * history when the page is first displayed.
+   */
   useEffect(() => {
     loadProfile()
   }, [])
 
+  // ======================================================
+  // Display helpers
+  // ======================================================
+
+  /**
+   * Returns a consistent placeholder when a value is missing.
+   */
   const safeText = (value) => {
     if (value === null || value === undefined || value === "") {
       return unavailableText
@@ -39,14 +61,23 @@ function Profile() {
     return String(value)
   }
 
-  const maskCardNumber = (cardNumber) => {
+/**
+ * Masks stored payment card numbers while preserving the last
+ * four digits for display purposes.
+ */
+const maskCardNumber = (cardNumber) => {
     if (!cardNumber) return unavailableText
 
     const value = String(cardNumber)
     return `**** **** **** ${value.slice(-4)}`
   }
 
-  const loadProfile = async () => {
+/**
+ * Retrieves all resources required by the profile page and
+ * prepares the editable profile information displayed to
+ * the customer.
+ */
+const loadProfile = async () => {
     const userRes = await fetch(`/api-profile-user/${username}`)
     const currentUser = await userRes.json()
 
@@ -115,6 +146,8 @@ function Profile() {
       return
     }
 
+    // Once the customer record has been resolved, load the
+    // customer's order history and related order summaries.    
     const orderRes = await fetch("/api/inft3050/Orders?limit=1000")
     const orderData = await orderRes.json()
 
@@ -130,6 +163,9 @@ function Profile() {
 
     const counts = {}
 
+
+    // Retrieve the item count for each order in parallel to
+    // reduce the overall loading time.
     await Promise.all(
       customerOrders.map(async (order) => {
         const orderID =
@@ -166,6 +202,13 @@ function Profile() {
     setOrderItemCounts(counts)
   }
 
+  // ======================================================
+  // Profile management
+  // ======================================================
+
+  /**
+   * Updates the customer's contact information.
+   */
   const handleUpdateContact = async () => {
     try {
       if (!user?.UserID) {
@@ -199,7 +242,10 @@ function Profile() {
     }
   }
 
-  const handleUpdateAddress = async () => {
+/**
+ * Updates the customer's stored delivery address.
+ */
+const handleUpdateAddress = async () => {
     try {
       if (!customer?.CustomerID) {
         alert("Customer record not found")
@@ -238,10 +284,18 @@ function Profile() {
     }
   }
 
-  const handleLogout = () => {
+/**
+ * Clears the current client-side session and returns the
+ * user to the login page.
+ */
+const handleLogout = () => {
     localStorage.clear()
     navigate("/login")
   }
+
+  // ======================================================
+  // Profile page rendering
+  // ======================================================
 
   return (
     <div className="profile-page">

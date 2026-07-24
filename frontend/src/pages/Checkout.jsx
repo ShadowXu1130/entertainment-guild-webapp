@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
+/**
+ * Checkout page for collecting delivery and payment details
+ * before creating a customer order.
+ *
+ * The component restores the cart from localStorage, applies a
+ * client-side customer route guard, validates checkout data and
+ * submits the completed order to the Express backend.
+ *
+ * Only a masked card number is included in the order request.
+ * The CVV is validated in the browser but is never stored or sent.
+ */
 function Checkout() {
   const navigate = useNavigate()
   const [cartItems, setCartItems] = useState([])
@@ -18,7 +29,15 @@ function Checkout() {
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
+  /**
+ * Applies the checkout route guard and restores the saved cart.
+ *
+ * Unauthenticated users are redirected to login, non-customer
+ * accounts return to the storefront and empty carts return to
+ * the cart page. Backend authorization must still protect the
+ * order-creation endpoint.
+ */
+useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn") === "true"
     const userType = localStorage.getItem("userType")
     if (!isLoggedIn) return navigate("/login")
@@ -28,7 +47,14 @@ function Checkout() {
     setCartItems(cart)
   }, [navigate])
 
-  const handleChange = (e) => {
+  /**
+ * Updates form state and normalizes fields that require a fixed format.
+ *
+ * Card numbers are grouped into four-digit blocks, expiry dates use
+ * MM/YY and numeric-only fields are restricted to their permitted
+ * lengths. Final validation is still performed before submission.
+ */
+const handleChange = (e) => {
     const { name, value } = e.target
 
     let formattedValue = value
@@ -71,14 +97,32 @@ function Checkout() {
       [name]: formattedValue
     }))
   }
+  /**
+ * Normalizes product prices because cart items may expose either
+ * "price" or "Price" depending on their original API response.
+ */
   const getItemPrice = (item) => Number(item.price || item.Price || 0)
+  // Calculate the live order summary from the current cart state.
   const totalItems = cartItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
   const totalPrice = cartItems.reduce((sum, item) => sum + getItemPrice(item) * Number(item.quantity || 0), 0)
 
-  const handleSubmit = async (e) => {
+  /**
+ * Validates checkout data and creates the order through the backend.
+ *
+ * Validation confirms that the customer ID is available, every cart
+ * item contains its stocktake and source references, and payment fields
+ * match the required formats. The request contains delivery details,
+ * masked card information and normalized order items.
+ *
+ * After a successful response, the persisted cart is cleared and the
+ * customer is redirected to the order confirmation page.
+ */
+const handleSubmit = async (e) => {
     e.preventDefault()
     setMessage("")
     const userID = Number(localStorage.getItem("userID"))
+// Validate customer, inventory and payment data before contacting
+// the order API so incomplete requests are rejected immediately.
 
 if (!userID) {
   return setMessage(
@@ -148,9 +192,14 @@ if (!/^\d{3}$/.test(formData.cvv)) {
   )
 }
 
+// Retain only the final four digits for order identification.
+// The complete card number and CVV are not included in the request.
 const maskedCardNumber = `**** **** **** ${cardDigits.slice(-4)}`
 
 setIsSubmitting(true)
+// Submit one normalized order payload to the Express backend.
+// The server is responsible for authoritative validation, stock updates
+// and creation of the order and product-order relationship records.
     try {
       const response = await fetch("http://localhost:5050/api-create-order", {
         method: "POST",
@@ -188,6 +237,10 @@ setIsSubmitting(true)
       setMessage("Could not connect to the order server.")
     } finally { setIsSubmitting(false) }
   }
+
+// ======================================================
+// Checkout interface rendering
+// ======================================================
 
   return (
     <div className="checkout-page">
